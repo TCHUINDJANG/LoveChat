@@ -4,52 +4,46 @@ import { User } from 'src/user/entities/user.entity';
 
 @Entity()
 export class Preference {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @OneToOne(() => User)
+  @JoinColumn()
+  user: User;
 
-    @OneToOne(() => User)
-    @JoinColumn()
-    user: User;
+  @Column({ nullable: true })
+  age: number;
 
-    @Column({ nullable: true })
-    age: number;
+  @Column({ nullable: true })
+  gender: string;
 
-    @Column({ nullable: true })
-    gender: string
+  @Column({ nullable: true })
+  minAge: number;
 
+  @Column({ nullable: true })
+  maxAge: number;
 
-    @Column({ nullable: true })
-    minAge: number;
+  @Column({ nullable: true })
+  location: string;
 
-    @Column({ nullable: true })
-    maxAge: number;
+  @Column('float', { nullable: true })
+  latitude: number;
 
-    @Column({ nullable: true })
-    location: string;
+  @Column('float', { nullable: true })
+  longitude: number;
 
-    @Column('float', { nullable: true })
-    latitude: number;
+  @Column('simple-array', { nullable: true })
+  coordinates: number[]; // [latitude, longitude]
 
-    @Column('float', { nullable: true })
-    longitude: number;
+  @Column({ nullable: true })
+  profession: string;
 
+  @Column({ nullable: true })
+  educationLevel: string;
 
-    @Column('float', { array: true, nullable: true })
-    coordinates: [number, number];      // [latitude, longitude]
+  @Column({ nullable: true })
+  distancePreference: number; // en kilomètres
 
-    @Column({ nullable: true })
-    profession: string;
-
-
-    @Column({ nullable: true })
-    educationLevel: string;
-
-
-    @Column({ nullable: true })
-    distancePreference: number; // en kilomètres
-
-    @Column('simple-array', { nullable: true })
-    interests: string[];
-
+  @Column('simple-array', { nullable: true })
+  interests: string[];
 }

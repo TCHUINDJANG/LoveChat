@@ -15,7 +15,7 @@ export class Photo {
     isProfile: boolean;
 
 
-    @ManyToOne(() => User, user => user.photos , { cascade : true})
+    @ManyToOne(() => User, user => user.photos )
     user: User;
 
 }
