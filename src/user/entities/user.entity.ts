@@ -1,5 +1,8 @@
 
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm'
+import { Column, Entity, PrimaryGeneratedColumn, Unique , JoinColumn} from 'typeorm'
+import { OneToOne } from 'typeorm';
+import { Preference } from 'src/Preferences/entity/preference.entity';
+// import { Preference } from 'src/Preferences/entity/preference.entity';
 
 
 export enum Sexe  {
@@ -13,6 +16,13 @@ export enum Status  {
     ACTIF='A',
     BLOCKED='B',
     DESACTIVATE= 'D'
+}
+
+
+export enum Role  {
+    USER='User',
+    ADMIN='Admin',
+    SUPERADMIN="SuperAdmin",
 }
 
 
@@ -61,12 +71,28 @@ export class User {
 
 
 
-    @Column({ type: 'json' , nullable: true})
-    preferences?: {
-        ageMin?: number;
-        ageMax?: number;
-        distanceMax?: number;
-    };
+    @Column({
+        type: 'enum',
+        enum:Role,
+        default: Role.USER
+    })
+    role:Role;
+
+
+   @OneToOne(() => Preference, { cascade: true })
+  @JoinColumn()
+  preference: Preference;
+
+  @Column('float', { nullable: true })
+  longitude: number;
+
+  @Column('float', { nullable: true })
+  latitude: number;
+
+
+
+    // @OneToOne(() => Preference, preference => preference.user, { cascade: true })
+    // preference: Preference;
 
 
    @Column({ type: 'varchar', nullable: true })

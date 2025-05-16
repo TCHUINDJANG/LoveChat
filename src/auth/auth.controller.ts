@@ -5,6 +5,7 @@ import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/ResetPasswordDto.dto';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth-guard';
+import { RegisterAdminDto } from './dto/register.admin.dto';
 
 
 
@@ -18,8 +19,15 @@ export class AuthController {
     async register(@Body() dto: RegisterDto) {
 
         return this.authService.register(dto);
-
     }
+
+
+    @Post('register-admin')
+    async registerAdmin(@Body() dto: RegisterAdminDto) {
+
+        return this.authService.registerAdmin(dto);
+    }
+
 
     @Post('login')
     async login(@Body() dto:LoginDto){

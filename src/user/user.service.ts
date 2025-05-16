@@ -6,6 +6,10 @@ import { JwtService } from '@nestjs/jwt';
 import { UpdateProfileDto } from 'src/auth/dto/update-profile.dto';
 import { EmailService } from 'src/email/email.service';
 import { UpdateStatutDto } from 'src/auth/dto/update-status-dto';
+import { SearchUserDto } from './dto/search-user.dto';
+import * as geolib from 'geolib'; // Pour calculer les distances
+
+
 
 
 
@@ -82,6 +86,7 @@ export class UserService {
                 biographie: user.biographie,
             }
         };
+
     }
 
 
@@ -162,4 +167,94 @@ export class UserService {
     //     user.resetPasswordExpires = null;
     //     await this.userRepo.save(user)
     // }
+
+
+
+    async SearchUserDto(searchUserdto: SearchUserDto): Promise<User[]> {
+        const {
+            age,
+      minAge,
+      maxAge,
+      gender,
+      location,
+      distance,
+      profession,
+      educationLevel,
+      interests,
+      latitude,
+      longitude,
+        } = searchUserdto
+
+
+        const query = this.userRepo.createQueryBuilder('user')
+        .leftJoinAndSelect('user.preference' , 'preference');
+
+
+        // Filtre par âge
+
+        if(age){
+            query.andWhere('user.age = :age' , {age});
+        } else if (minAge || maxAge) {
+            query.andWhere('user.age BETWEEN :minAge AND :maxAge', {
+                minAge: minAge || 18,
+                maxAge: maxAge || 100,
+            });
+        }
+
+
+        // Filtre par genre
+        if(gender) {
+            query.andWhere('user.gender = :gender', { gender });
+        }
+
+        // Filtre par localisation (texte)
+
+        if(location) {
+            query.andWhere('user.localisation LIKE :localisation' , {
+                location: `%${location}%`,
+            })
+        }
+
+
+        // Filtre par profession
+        if(profession){
+            query.andWhere('preference.profession LIKE :profession' , {
+                profession:`%${profession}%`,
+            });
+        }
+
+
+        // Filtre par niveau d'éducation
+
+        if(educationLevel) {
+            query.andWhere('preference.educationLevel = :educationLevel', {
+        educationLevel,
+      });
+        }
+
+
+
+        // Filtre par centres d'intérêt
+
+        if(interests && interests.length > 0){
+            query.andWhere('preference.interests && ARRAY[:...interests]' , {
+                interests,
+            });
+        }
+
+
+        if (latitude && longitude && distance) {
+      const users = await query.getMany();
+      return users.filter((user) => {
+        if (!user.latitude || !user.longitude) return false;
+        const userDistance = geolib.getDistance(
+          { latitude, longitude },
+          { latitude: user.latitude, longitude: user.longitude },
+        );
+        return userDistance <= distance * 1000; // Conversion en mètres
+      });
+    }
+
+    return query.getMany();
+    }
 }

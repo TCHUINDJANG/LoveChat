@@ -1,4 +1,4 @@
-import { Controller, UseGuards , Request , Get, Body , Param , Post } from '@nestjs/common';
+import { Controller, UseGuards , Request , Get, Body , Param , Post , Query } from '@nestjs/common';
 import { Put } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth-guard';
 import { UserService } from './user.service';
@@ -6,6 +6,7 @@ import { UpdateProfileDto } from 'src/auth/dto/update-profile.dto';
 import { ForgotPasswordDto } from 'src/auth/dto/forgot-password.dto';
 import { ResetPasswordDto } from 'src/auth/dto/ResetPasswordDto.dto';
 import { UpdateStatutDto } from 'src/auth/dto/update-status-dto';
+import { SearchUserDto } from './dto/search-user.dto';
 
 @Controller('user')
 export class UserController {
@@ -32,6 +33,14 @@ export class UserController {
     async updateStatus(@Request() req,  @Body() dto:UpdateStatutDto) {
         return this.userService.putStatut(req.user.id , dto)
     }
+
+
+
+    @Get('search')
+    async search(@Query() searchdto:SearchUserDto){
+        return this.userService.SearchUserDto(searchdto)
+    }
+
 
 
     // @UseGuards(JwtAuthGuard)

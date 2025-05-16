@@ -8,6 +8,8 @@ import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ResetPasswordDto } from './dto/ResetPasswordDto.dto';
 import { NotFoundException } from '@nestjs/common';
+import { RegisterAdminDto } from './dto/register.admin.dto';
+import { Role } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +25,7 @@ export class AuthService {
 
 
     async register(dto: RegisterDto){
+            
             const user = await this.userRepo.findOne({where: [{email:dto.email} , { telephone:dto.telephone}]});
 
             if (user) throw new BadRequestException("l'utilisateur exite deja")
@@ -49,10 +52,10 @@ export class AuthService {
 
 
 
-    async findByEmailOrPhone(email , telephone ):Promise<any> {
+    async findByEmailOrPhone(email , telephone , role):Promise<any> {
 
         const user =   await this.userRepo.findOne({
-            where: [{ email : email} , {telephone: telephone}],
+            where: [{ email : email , role:role} , {telephone: telephone , role:role}],
         });
 
         if(!user)  throw new BadRequestException("l'utilisateur n'exite pas")
@@ -75,7 +78,8 @@ export class AuthService {
 
 
     async login(dto: LoginDto) {
-        const user = await this.findByEmailOrPhone(dto.email , dto.telephone)
+        const role = Role.USER
+        const user = await this.findByEmailOrPhone(dto.email , dto.telephone , role)
 
         const passwordMatch = await bcrypt.compare(dto.password , (await user).data.password)
 
@@ -123,5 +127,63 @@ export class AuthService {
 
         
     }
+
+
+     async registerAdmin(dto: RegisterAdminDto){
+        
+            const role = Role.ADMIN
+            const user = await this.userRepo.findOne({where: {email:dto.email ,  password:dto.password , role}});
+
+            if (user) throw new BadRequestException("cet admin  exite deja")
+
+                const hashedPassword = await bcrypt.hash(dto.password , 10)
+
+                const newAdmin = this.userRepo.create({
+                    email:dto.email,
+                    password:hashedPassword,
+                    role: Role.ADMIN
+
+                });
+
+                const saved = await this.userRepo.save(newAdmin)
+
+                return {
+                    success:true,
+                    message:"Administrateur cree avec success",
+                    data: {
+                        email:saved.email,
+                        telephone:saved.telephone
+                    },
+                }
+    }
+
+
+
+
+    async loginAdmin(dto: LoginDto) {
+        const role = Role.ADMIN
+        const user = await this.findByEmailOrPhone(dto.email , dto.telephone , role)
+
+        const passwordMatch = await bcrypt.compare(dto.password , (await user).data.password)
+
+        if(!passwordMatch) throw new BadRequestException("Mot de passe incorect")
+
+
+        const payload = {
+            id: user.data.id,
+            email:user.data.email,
+            telephone: user.data.telephone
+        };
+
+        const token = this.jwtService.sign(payload)
+
+            return {
+                success : true,
+                message:"Utilisateur connecte",
+                token:token,
+                user:user
+            };
+    }
+
     
 }

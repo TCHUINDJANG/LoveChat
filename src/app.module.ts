@@ -6,6 +6,8 @@ import { UserModule } from './user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { User } from './user/entities/user.entity';
+import { ChatModule } from './chat/chat/chat.module';
+
 
 @Module({
   imports: [
@@ -26,6 +28,7 @@ import { User } from './user/entities/user.entity';
     TypeOrmModule.forFeature([User]),
     AuthModule,
     UserModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
