@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { UserModule } from 'src/user/user.module';
 import { Notification } from '../entity/notification.entity';
-import { JwtAuthGuard } from 'src/auth/jwt-auth-guard';
+import { AuthModule } from 'src/auth/auth.module';
 
 
 
@@ -15,7 +15,7 @@ imports: [
     TypeOrmModule.forFeature([Notification , User]),
     // Importez aussi le module contenant UserRepository si nécessaire
     UserModule,
-    JwtAuthGuard,
+    AuthModule
   ],
   providers: [NotificationService],
   exports: [NotificationService], // Important : doit être exporté

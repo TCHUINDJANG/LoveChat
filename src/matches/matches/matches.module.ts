@@ -7,15 +7,17 @@ import { MatchesGateway } from './matches.gateway';
 import { PreferenceModule } from 'src/Preferences/preference/preference.module';
 import { Match } from '../enttity/match.entity';
 import { NotificationModule } from 'src/notifications/notification/notification.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
-  imports : [
+  imports: [
     TypeOrmModule.forFeature([Match]),
     UserModule,
     PreferenceModule,
     NotificationModule,
+    AuthModule,
   ],
-  providers: [MatchesService , MatchesGateway],
-  controllers: [MatchesController]
+  providers: [MatchesService, MatchesGateway],
+  controllers: [MatchesController],
 })
 export class MatchesModule {}
