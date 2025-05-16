@@ -9,6 +9,7 @@ import { User } from './user/entities/user.entity';
 import { ChatModule } from './chat/chat/chat.module';
 import { MatchesModule } from './matches/matches/matches.module';
 import { NotificationModule } from './notifications/notification/notification.module';
+import { LikesModule } from './likes/likes/likes.module';
 
 
 @Module({
@@ -33,6 +34,7 @@ import { NotificationModule } from './notifications/notification/notification.mo
     ChatModule,
     MatchesModule,
     NotificationModule,
+    LikesModule,
 
   ],
   controllers: [AppController],

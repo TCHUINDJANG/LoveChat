@@ -47,6 +47,7 @@ export class UserService {
                 telephone: user.telephone,
                 biographie: user.biographie,
                 statut:user.statut,
+                id:user.id,
 
             }
         }

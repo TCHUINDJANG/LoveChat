@@ -4,7 +4,6 @@ import { IsOptional,  IsNotEmpty, IsString , IsArray , IsNumber} from 'class-val
 export class LikeDto {
    
     
-@IsOptional()
 @IsNotEmpty()
 @IsString()
 userId: string;

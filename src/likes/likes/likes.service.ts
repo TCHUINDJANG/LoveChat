@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { User } from 'src/user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LikeDto } from '../dto/likes.dto';
 import { Like } from '../entities/likes.entity';
 import { Request } from '@nestjs/common';
+import { Body } from '@nestjs/common';
 
 @Injectable()
 export class LikesService {
@@ -18,19 +19,25 @@ export class LikesService {
     ) {}
 
 
-    async createLike(@Request() req , dto:LikeDto)  {
+    async createLike(@Request() req , @Body() dto:LikeDto)  {
 
-        const user2 = await this.userRepo.findOneBy({id:dto.userId})
+        const user2 = await this.userRepo.findOne({ where : {id:dto.userId}})
 
-        const user1 = await this.userRepo.findOneBy({id :req.user.id})
+        const user1 = await this.userRepo.findOne( { where: {id :req.user.id}})
 
 
         if(!user1) {
-            throw new Error("Vous ne pouvez pas liker");
+            throw new NotFoundException("Vous ne pouvez pas liker");
         }
 
         if(!user2) {
-            throw new Error('User not found');
+            throw new NotFoundException('User not found');
+        }
+
+        const findLike = await this.likeRepositoy.findOne({ where: {user:user1 , likedUser: user2}});
+
+        if(findLike) {
+            throw new BadRequestException("Vous likez deja cet utilisateur")
         }
 
         const like = this.likeRepositoy.create({
@@ -43,6 +50,13 @@ export class LikesService {
             updatedAt: Date(),
             isMatch:false,
         });
+
+
+        if(user2.receivedLikes.map(likedUser =>user1)) {
+            like.isMatch = true;
+        }
+
+        
 
         return await this.likeRepositoy.save(like);
     }
