@@ -6,12 +6,14 @@ import { UserModule } from 'src/user/user.module';
 import { MatchesGateway } from './matches.gateway';
 import { PreferenceModule } from 'src/Preferences/preference/preference.module';
 import { Match } from '../enttity/match.entity';
+import { NotificationModule } from 'src/notifications/notification/notification.module';
 
 @Module({
   imports : [
     TypeOrmModule.forFeature([Match]),
     UserModule,
     PreferenceModule,
+    NotificationModule,
   ],
   providers: [MatchesService , MatchesGateway],
   controllers: [MatchesController]

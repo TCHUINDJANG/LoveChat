@@ -1,7 +1,8 @@
 
-import { Column, Entity, PrimaryGeneratedColumn, Unique , JoinColumn} from 'typeorm'
+import { Column, Entity, PrimaryGeneratedColumn, Unique , JoinColumn, OneToMany} from 'typeorm'
 import { OneToOne } from 'typeorm';
 import { Preference } from 'src/Preferences/entity/preference.entity';
+import { Photo } from 'src/upload/entity/photo.entity';
 // import { Preference } from 'src/Preferences/entity/preference.entity';
 
 
@@ -88,6 +89,11 @@ export class User {
 
   @Column('float', { nullable: true })
   latitude: number;
+
+
+  @OneToMany(() => Photo, photo => photo.user, { cascade: true })
+  @JoinColumn()
+  photos: Photo[];
 
 
 
