@@ -3,6 +3,7 @@ import { Column, Entity, PrimaryGeneratedColumn, Unique , JoinColumn, OneToMany}
 import { OneToOne } from 'typeorm';
 import { Preference } from 'src/Preferences/entity/preference.entity';
 import { Photo } from 'src/upload/entity/photo.entity';
+import { Like } from 'src/likes/entities/likes.entity';
 // import { Preference } from 'src/Preferences/entity/preference.entity';
 
 
@@ -94,6 +95,15 @@ export class User {
   @OneToMany(() => Photo, photo => photo.user, { cascade: true })
   @JoinColumn()
   photos: Photo[];
+
+
+  @OneToMany(() => Like, (like) => like.user , { 
+    cascade: true, // Permet de supprimer les likes si l'user est supprimé
+  })
+  sentLikes: Like[];
+
+  @OneToMany(() => Like, (like) => like.likedUser)
+  receivedLikes: Like[];
 
 
 
