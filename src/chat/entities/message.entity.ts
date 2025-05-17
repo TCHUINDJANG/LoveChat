@@ -1,15 +1,16 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { Match } from 'src/matches/enttity/match.entity';
+import { Like } from 'src/likes/entities/likes.entity';
 
 @Entity()
 export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Match)
+  @ManyToOne(() => Like)
   @JoinColumn({ name: 'match_id' })
-  match: Match;
+  like: Like;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'sender_id' })
@@ -23,4 +24,8 @@ export class Message {
 
   @Column({ default: false })
   read: boolean;
+
+
+  @Column({ default: false })
+  isMatched: boolean;
 }

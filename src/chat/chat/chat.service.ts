@@ -4,6 +4,8 @@ import { InjectRepository  } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Match } from 'src/matches/enttity/match.entity';
 import { User } from 'src/user/entities/user.entity';
+import { Request } from '@nestjs/common';
+import { Like } from 'src/likes/entities/likes.entity';
 
 @Injectable()
 export class ChatService {
@@ -12,45 +14,49 @@ export class ChatService {
         @InjectRepository(Message)
         private readonly messageRepository: Repository<Message>,
         @InjectRepository(Match)
-    private readonly matchRepository: Repository<Match>,
+    private readonly likeRepository: Repository<Like>,
     ){}
 
 
 
-    async sendMessage(sender: User , matchId:string , content:string) : Promise<Message> {
+    async sendMessage(@Request() req, matchId:number , content:string) {
 
-        // Vérifier que le match existe et que l'utilisateur fait partie du match
 
-        const match = await this.matchRepository.findOne({
+      const sender = req.user;
+
+        // Vérifier que le match existe et que l'utilisateur fait partie du like
+
+        const like = await this.likeRepository.findOne({
             where: { id:matchId , isMatched:true},
             relations: ['user1', 'user2'],
         });
 
-        if(!match) {
-            throw new NotFoundException('Match not found or not mutual');
+        if(!like) {
+            throw new NotFoundException('like not found or not mutual');
         }
 
         // Vérifier que l'utilisateur fait partie du match
 
-        if(match.user1.id !== sender.id &&  match.user2.id !== sender.id) {
+        if(like.user.id !== sender.id  &&  like.likedUser.id !== sender.id) {
             throw new ForbiddenException('Vous ne faites pas partir du match');
         }
 
         // Créer et sauvegarder le message
 
         const message = this.messageRepository.create({
-            match,
-            sender,
+            like : { id: matchId },
+            sender: { id: sender.id },
             content,
+            read,
         });
 
         return this.messageRepository.save(message);
     }
 
 
-    async getMessagesForMatch(user: User , matchId: string):Promise<Message[]> {
+    async getMessagesForMatch(user: User , matchId: string) {
         // Vérifier que le match existe et que l'utilisateur fait partie du match
-        const match = await this.matchRepository.findOne({
+        const match = await this.likeRepository.findOne({
             where: { id: matchId , isMatched:true},
             relations: ['user1', 'user2'],
         });
@@ -62,13 +68,13 @@ export class ChatService {
 
 
         // Vérifier que l'utilisateur fait partie du match
-        if (match.user1.id !== user.id && match.user2.id !== user.id) {
+        if (like.user.id !== user.id && match.user2.id !== user.id) {
             throw new ForbiddenException('You are not part of this match');
     }
 
         // Récupérer les messages du match
         return this.messageRepository.find({
-            where: {match: {id:matchId}} , 
+            where: {like: {id:matchId}} , 
             relations: ['sender'],
             order: { createdAt: 'ASC' },
         });
