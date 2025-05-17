@@ -20,7 +20,7 @@ export class NotificationService {
 
   // Créer une notification
 
-  async createNotification(createDto: CreateNotificationDto): Promise<Notification> {
+  async createNotification(createDto: CreateNotificationDto , req): Promise<Notification> {
     // Vérifiez que le recipient existe
     const recipient = await this.userRepository.findOneBy({ id: createDto.recipientId });
     if (!recipient) {
