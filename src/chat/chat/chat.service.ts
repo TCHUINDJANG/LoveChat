@@ -55,7 +55,7 @@ export class ChatService {
     }
 
 
-    async getMessagesForMatch(@Request() req,  matchId: number) {
+    async getMessagesForLike(@Request() req,  matchId: number) {
 
       const sender = req.user;
         // Vérifier que le match existe et que l'utilisateur fait partie du match

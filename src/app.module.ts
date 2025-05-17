@@ -10,6 +10,8 @@ import { ChatModule } from './chat/chat/chat.module';
 import { MatchesModule } from './matches/matches/matches.module';
 import { NotificationModule } from './notifications/notification/notification.module';
 import { LikesModule } from './likes/likes/likes.module';
+import { Media } from './media/entity/media.entity';
+import { MediaModule } from './media/media/media.module';
 
 
 @Module({
@@ -28,13 +30,14 @@ import { LikesModule } from './likes/likes/likes.module';
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User , Media]),
     AuthModule,
     UserModule,
     ChatModule,
     MatchesModule,
     NotificationModule,
     LikesModule,
+    MediaModule,
 
   ],
   controllers: [AppController],

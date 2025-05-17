@@ -52,7 +52,7 @@ export class NotificationService {
     });
   }
 
-  // Marquer comme lu
+  // Marquer comme lu 
   async markAsRead(notificationId: string, updateDto: UpdateNotificationDto): Promise<Notification> {
 
     const notification = await this.notificationRepository.findOneBy({ id: notificationId });

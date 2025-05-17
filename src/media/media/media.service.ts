@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Media } from '../entity/media';
+import { Media } from '../entity/media.entity';
 import { User } from 'src/user/entities/user.entity';
 import { UploadService } from 'src/upload/upload/upload.service';
 import { NotFoundException } from '@nestjs/common';

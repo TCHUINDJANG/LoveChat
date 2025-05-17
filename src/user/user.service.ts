@@ -90,15 +90,6 @@ export class UserService {
 
     }
 
-
-
-
-
-
-
-
-
-
     async putStatut(id: string , dto:UpdateStatutDto) {
         const user = await this.userRepo.findOne(({ where: {id: id}}));
         

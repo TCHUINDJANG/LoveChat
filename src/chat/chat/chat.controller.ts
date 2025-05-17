@@ -36,7 +36,7 @@ export class ChatController {
         @Req() req: { user: User },
         @Param('matchId') matchId: number,
   ) {
-        return this.messagesService.getMessagesForMatch(req.user, matchId);
+        return this.messagesService.getMessagesForLike(req.user, matchId);
   }
 
 

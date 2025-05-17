@@ -3,7 +3,7 @@ import { MediaService } from './media.service';
 import { MediaController } from './media.controller';
 import { UploadService } from 'src/upload/upload/upload.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Media } from '../entity/media';
+import { Media } from '../entity/media.entity';
 import { User } from 'src/user/entities/user.entity';
 
 @Module({

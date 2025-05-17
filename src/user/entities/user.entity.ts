@@ -4,6 +4,7 @@ import { OneToOne } from 'typeorm';
 import { Preference } from 'src/Preferences/entity/preference.entity';
 import { Photo } from 'src/upload/entity/photo.entity';
 import { Like } from 'src/likes/entities/likes.entity';
+import { Media } from 'src/media/entity/media.entity';
 // import { Preference } from 'src/Preferences/entity/preference.entity';
 
 
@@ -90,6 +91,10 @@ export class User {
 
   @Column('float', { nullable: true })
   latitude: number;
+
+
+  @OneToMany(() => Media, media => media.user)
+  media: Media[];
 
 
   @OneToMany(() => Photo, photo => photo.user, { cascade: true })
