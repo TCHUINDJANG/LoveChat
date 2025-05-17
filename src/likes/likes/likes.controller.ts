@@ -18,4 +18,11 @@ export class LikesController {
         async createLike(@Request() req,  @Body() dto:LikeDto) {
             return this.likeService.createLike(req , dto)
         }
+
+
+        @UseGuards(JwtAuthGuard)
+        @Post('dislike')
+        async dislikeUser(@Request() req,  @Body() dto:LikeDto) {
+            return this.likeService.DisLike(req , dto)
+        }
 }

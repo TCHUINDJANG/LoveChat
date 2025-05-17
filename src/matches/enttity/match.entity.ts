@@ -30,8 +30,8 @@ export class Match {
     createdAt: Date;
 
 
-    @OneToMany(() => Message, message => message.match)
-    messages: Message[];
+    // @OneToMany(() => Message, message => message.match)
+    // messages: Message[];
 
 
 }

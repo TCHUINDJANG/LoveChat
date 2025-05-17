@@ -104,20 +104,20 @@ export class MatchesService {
         const savedMatch = await this.matchRepository.save(newMatch)
     
     // Notifier les deux utilisateurs
-    await this.notificationService.createNotification({
-      recipientId: user1.id,
-      type: 'NEW_MATCH',
-      message: `Vous avez un nouveau match avec ${user2.prenom}!`,
-      senderId: user2.id,
-      metadata: { matchId: savedMatch.id },
-    });
+    // await this.notificationService.createNotification({
+    //   recipientId: user1.id,
+    //   type: 'NEW_MATCH',
+    //   message: `Vous avez un nouveau match avec ${user2.prenom}!`,
+    //   senderId: user2.id,
+    //   metadata: { matchId: savedMatch.id },
+    // });
 
-    await this.notificationService.createNotification({
-      recipientId: user2.id,
-      type: 'NEW_MATCH',
-      message: `Vous avez un nouveau match avec ${user1.prenom}!`,
-      senderId: user1.id,
-      metadata: { matchId: savedMatch.id },
-    });
+    // await this.notificationService.createNotification({
+    //   recipientId: user2.id,
+    //   type: 'NEW_MATCH',
+    //   message: `Vous avez un nouveau match avec ${user1.prenom}!`,
+    //   senderId: user1.id,
+    //   metadata: { matchId: savedMatch.id },
+    // });
   }
 }

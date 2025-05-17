@@ -20,7 +20,7 @@ export class NotificationService {
 
   // Créer une notification
 
-  async createNotification(createDto: CreateNotificationDto , req): Promise<Notification> {
+ async createNotification(createDto: CreateNotificationDto , data): Promise<Notification> {
     // Vérifiez que le recipient existe
     const recipient = await this.userRepository.findOneBy({ id: createDto.recipientId });
     if (!recipient) {
@@ -32,7 +32,7 @@ export class NotificationService {
       recipient: recipient, // Passez l'entité User complète
       type: createDto.type as NotificationType, // Cast explicite vers NotificationType
       message: createDto.message,
-      senderId: createDto.senderId,
+      senderId: data.id,
       metadata: createDto.metadata,
       isRead: false, // Assurez-vous que le nom correspond à votre entité (read ou isRead)
       createdAt: new Date(),

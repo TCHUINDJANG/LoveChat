@@ -13,7 +13,7 @@ export class ChatService {
     constructor(
         @InjectRepository(Message)
         private readonly messageRepository: Repository<Message>,
-        @InjectRepository(Match)
+        @InjectRepository(Like)
     private readonly likeRepository: Repository<Like>,
     ){}
 
@@ -27,8 +27,8 @@ export class ChatService {
         // Vérifier que le match existe et que l'utilisateur fait partie du like
 
         const like = await this.likeRepository.findOne({
-            where: { id:matchId , isMatched:true},
-            relations: ['user1', 'user2'],
+            where: { id:matchId , isMatch:true},
+            relations: ['user', 'likedUser'],
         });
 
         if(!like) {
@@ -47,28 +47,31 @@ export class ChatService {
             like : { id: matchId },
             sender: { id: sender.id },
             content,
-            read,
+            read:false,
+            
         });
 
         return this.messageRepository.save(message);
     }
 
 
-    async getMessagesForMatch(user: User , matchId: string) {
+    async getMessagesForMatch(@Request() req,  matchId: number) {
+
+      const sender = req.user;
         // Vérifier que le match existe et que l'utilisateur fait partie du match
-        const match = await this.likeRepository.findOne({
-            where: { id: matchId , isMatched:true},
-            relations: ['user1', 'user2'],
+        const like = await this.likeRepository.findOne({
+            where: { id: matchId , isMatch:true},
+            relations: ['user', 'likedUser'],
         });
 
 
-        if(!match) {
+        if(!like) {
             throw new NotFoundException('Match not found or not mutual');
         }
 
 
         // Vérifier que l'utilisateur fait partie du match
-        if (like.user.id !== user.id && match.user2.id !== user.id) {
+        if (like.user.id !== sender.id && like.likedUser.id !== sender.id) {
             throw new ForbiddenException('You are not part of this match');
     }
 
@@ -81,10 +84,12 @@ export class ChatService {
     }
 
 
-    async markAsRead(user:User , messageId:number): Promise<void> {
+    async markAsRead( @Request() req, messageId:number) {
+
+      const sender = req.user;
         const message = await this.messageRepository.findOne({
             where: { id: messageId},
-            relations: ['match.user1', 'match.user2', 'sender'],
+            relations: ['like.user', 'like.likedUser', 'sender'],
         });
 
         if(!message) {
@@ -94,8 +99,8 @@ export class ChatService {
         // Vérifier que l'utilisateur est le destinataire
 
         const isRecipient = 
-        (message.match.user1.id === user.id && message.sender.id === message.match.user2.id) ||
-        (message.match.user2.id === user.id && message.sender.id === message.match.user1.id);
+        (message.like.user.id === sender.id && message.sender.id === message.like.likedUser.id) ||
+        (message.like.user.id === sender.id && message.sender.id === message.like.likedUser.id);
 
 
         if(!isRecipient){
@@ -107,26 +112,26 @@ export class ChatService {
     }
 
 
-    async getConversations(user: User): Promise<Match[]> {
+    async getConversations(user: User) {
         // Récupérer tous les matches mutuels avec les derniers messages
-        const matches = await this.matchRepository.find({
+        const like = await this.likeRepository.find({
             where: [
-                { user1: {id:user.id} , isMatched:true},
-                { user2: {id: user.id} , isMatched:true},
+                { user: {id:user.id} , isMatch:true},
+                { likedUser: {id: user.id} , isMatch:true},
             ],
 
-            relations: ['user1', 'user2', 'messages'],
+            relations: ['user', 'likedUser', 'messages'],
         });
 
         // Pour chaque match, récupérer le dernier message
 
         const matchesWithLastMessage = await Promise.all(
-      matches.map(async (match) => {
+      like.map(async (likes) => {
         const lastMessage = await this.messageRepository.findOne({
-          where: { match: { id: match.id } },
+          where: { like: { id: likes.id } },
           order: { createdAt: 'DESC' },
         });
-        return { ...match, lastMessage };
+        return { ...like, lastMessage };
       }),
     );
 
@@ -135,32 +140,32 @@ export class ChatService {
 
 
 
-  async validateUserMatch(userId: string, matchId: string): Promise<Match> {
-    const match = await this.matchRepository.findOne({
+  async validateUserMatch(userId: string, matchId: number){
+    const like = await this.likeRepository.findOne({
       where: { 
         id: matchId, 
-        isMatched: true,
+        isMatch: true,
       },
-      relations: ['user1', 'user2'],
+      relations: ['user', 'likedUser'],
     });
 
-    if (!match) {
-      throw new NotFoundException('Match not found or not mutual');
+    if (!like) {
+      throw new NotFoundException('like not found or not mutual');
     }
 
     // Check if user is part of this match
-    if (match.user1.id !== userId && match.user2.id !== userId) {
+    if (like?.user.id !== userId && like?.likedUser.id !== userId) {
       throw new ForbiddenException('You are not part of this match');
     }
 
-    return match;
+    return like;
   }
 
 
-  async getMatch(matchId: string): Promise<Match> {
-    const match = await this.matchRepository.findOne({
+  async getMatch(matchId: number) {
+    const match = await this.likeRepository.findOne({
       where: { id: matchId },
-      relations: ['user1', 'user2'],
+      relations: ['user', 'likedUser'],
     });
 
     if (!match) {

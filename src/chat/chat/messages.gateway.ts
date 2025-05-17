@@ -28,6 +28,8 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     constructor(private readonly messagesService: ChatService) {}
 
+    
+
     async handleConnection(client: Socket & { user: User }) {
         console.log(`Client connected: ${client.id}`);
         this.connectedUsers.set(client.user.id, client);
@@ -41,7 +43,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     @SubscribeMessage('sendMessage')
     async handleMessage(
         @ConnectedSocket() client: Socket & { user: User },
-        @MessageBody() payload: { matchId: string; content: string },
+        @MessageBody() payload: { matchId: number; content: string },
     ) {
         try {
             const message = await this.messagesService.sendMessage(
@@ -52,8 +54,8 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
             // Trouver l'autre utilisateur dans le match
             const match = await this.messagesService.getMatch(payload.matchId);
-            const recipientId = 
-                match.user1.id === client.user.id ? match.user2.id : match.user1.id;
+            
+                match.user.id === client.user.id ? match.likedUser.id : match.user.id;
 
             // Envoyer le message à tous les clients dans la room du match
             this.server.to(`match_${payload.matchId}`).emit('newMessage', message);
@@ -75,7 +77,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     @SubscribeMessage('joinMatchRoom')
     async handleJoinRoom(
         @ConnectedSocket() client: Socket & { user: User },
-        @MessageBody() matchId: string,
+        @MessageBody() matchId: number,
     ) {
         try {
             await this.messagesService.validateUserMatch(client.user.id, matchId);

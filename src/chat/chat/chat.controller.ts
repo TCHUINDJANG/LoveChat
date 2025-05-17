@@ -20,7 +20,7 @@ export class ChatController {
     @ApiResponse({ status: 404, description: 'Match not found' })
     async sendMessage(
         @Req () req : {user: User},
-        @Param('matchId') matchId: string,
+        @Param('matchId') matchId: number,
         @Body('content') content: string,
     ) {
         return this.messagesService.sendMessage(req.user , matchId , content);
@@ -34,7 +34,7 @@ export class ChatController {
     @ApiResponse({ status: 404, description: 'Match not found' })
     async getMessages(
         @Req() req: { user: User },
-        @Param('matchId') matchId: string,
+        @Param('matchId') matchId: number,
   ) {
         return this.messagesService.getMessagesForMatch(req.user, matchId);
   }
