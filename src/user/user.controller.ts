@@ -9,7 +9,8 @@ import { UpdateStatutDto } from 'src/auth/dto/update-status-dto';
 import { SearchUserDto } from './dto/search-user.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiQuery, ApiBody, ApiParam } from '@nestjs/swagger';
 
-
+// swagger
+// http://localhost:3000/api-docs
 
 @ApiTags('Users') // Groupe tous ces endpoints sous la section "Users" dans Swagger UI
 @ApiBearerAuth() // Indique que ces endpoints nécessitent une authentification Bearer Token
@@ -102,12 +103,12 @@ export class UserController {
 
 
 
-    // @UseGuards(JwtAuthGuard)
-    // @Post('forgot-password')
-    // async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
-    //     await this.userService.forgotPassword(forgotPasswordDto);
-    //     return { message: 'Email de réinitialisation envoyé si l\'email existe.' };
-    // }
+    @UseGuards(JwtAuthGuard)
+    @Post('forgot-password')
+    async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+        await this.userService.forgotPassword(forgotPasswordDto);
+        return { message: 'Email de réinitialisation envoyé si l\'email existe.' };
+    }
 
     
 }

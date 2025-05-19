@@ -8,10 +8,9 @@ import { EmailService } from 'src/email/email.service';
 import { UpdateStatutDto } from 'src/auth/dto/update-status-dto';
 import { SearchUserDto } from './dto/search-user.dto';
 import * as geolib from 'geolib'; // Pour calculer les distances
-
-
-
-
+import { ForgotPasswordDto } from 'src/auth/dto/forgot-password.dto';
+import { ResetPasswordDto } from 'src/auth/dto/ResetPasswordDto.dto';
+import * as bcrypt from 'bcrypt';
 
 
 @Injectable()
@@ -116,49 +115,49 @@ export class UserService {
     }
 
 
-    // async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
-    //     const user = await this.userRepo.findOneBy({
-    //         email: forgotPasswordDto.email
-    //     });
+    async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
+        const user = await this.userRepo.findOneBy({
+            email: forgotPasswordDto.email
+        });
 
-    //     if(!user) return ;
-
-
-    //     const token = this.jwtService.sign(
-    //         {userId:user.id},
-    //         { secret: process.env.JWT_SECRET, expiresIn: process.env.JWT_RESET_EXPIRES_IN },
-    //     );
+        if(!user) return ;
 
 
-
-    //     user.resetPasswordToken = token;
-    //     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
-    //     await this.userRepo.save(user)
-
-
-    //     await this.emailService.sendResetPasswordEmail(user.email , token)
-    // }
+        const token = this.jwtService.sign(
+            {userId:user.id},
+            { secret: process.env.JWT_SECRET, expiresIn: process.env.JWT_RESET_EXPIRES_IN },
+        );
 
 
 
-    // async resetPassword(resetPasswordDto: ResetPasswordDto):Promise<void> {
-    //     const payload = this.jwtService.verify(resetPasswordDto.token , {
-    //         secret: process.env.JWT_SECRET,
-    //     });
-
-    //     const user = await this.userRepo.findOneBy({
-    //         resetPasswordToken:resetPasswordDto.token,
-    //         resetPasswordExpires:MoreThan(new Date()),
-    //     })
-
-    //     if(!user) throw new BadRequestException('Token invalide ou expiré');
+        user.resetPasswordToken = token;
+        user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
+        await this.userRepo.save(user)
 
 
-    //     user.password = await bcrypt.hash(resetPasswordDto.newPassword , 10);
-    //     user.resetPasswordToken = null;
-    //     user.resetPasswordExpires = null;
-    //     await this.userRepo.save(user)
-    // }
+        await this.emailService.sendResetPasswordEmail(user.email , token)
+    }
+
+
+
+    async resetPassword(resetPasswordDto: ResetPasswordDto):Promise<void> {
+        const payload = this.jwtService.verify(resetPasswordDto.token , {
+            secret: process.env.JWT_SECRET,
+        });
+
+        const user = await this.userRepo.findOneBy({
+            resetPasswordToken:resetPasswordDto.token,
+            resetPasswordExpires:MoreThan(new Date()),
+        })
+
+        if(!user) throw new BadRequestException('Token invalide ou expiré');
+
+
+        user.password = await bcrypt.hash(resetPasswordDto.newPassword , 10);
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await this.userRepo.save(user)
+    }
 
 
 

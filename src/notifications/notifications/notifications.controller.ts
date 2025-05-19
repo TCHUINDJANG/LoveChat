@@ -25,6 +25,8 @@ export class NotificationController {
 
   @Get(':userId')
   getUserNotifications(@Param('userId') userId: string) {
+
+
     return this.notificationService.getUserNotifications(userId);
   }
 
