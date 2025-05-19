@@ -30,7 +30,6 @@ export class LikesService {
 
     const user1 = await this.userRepo.findOne({
       where: { id: req.user.id },
-      relations: ['user'],
     });
 
     if (!user1) {
@@ -60,7 +59,7 @@ export class LikesService {
     });
 
     const hasMatched = user2.receivedLikes.some(
-      (like) => like.user.id === user1.id,
+      (like) => like.user.id === user2.id,
     );
 
     if (hasMatched) {

@@ -5,6 +5,8 @@ import { ChatService } from './chat.service';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from 'src/user/entities/user.entity';
 import { Get , Param , Body , Post } from '@nestjs/common';
+import { createMessageDto } from '../dto/create-message.dto';
+import { Request } from '@nestjs/common';
 
 
 @ApiTags('messages')
@@ -16,15 +18,21 @@ export class ChatController {
 
 
 
+    // @Post('')
+    // @ApiResponse({ status: 404, description: 'Match not found' })
+    // async sendMessage(
+    //     @Req () req : {user: User},
+    //     dto:createMessageDto
+    // ) {
+    //     return this.messagesService.sendMessage(req.user , dto.matchId , dto.content);
+    // }
 
-    @ApiResponse({ status: 404, description: 'Match not found' })
-    async sendMessage(
-        @Req () req : {user: User},
-        @Param('matchId') matchId: number,
-        @Body('content') content: string,
-    ) {
-        return this.messagesService.sendMessage(req.user , matchId , content);
+
+    @Post()
+    async sendMessage(@Request() req, @Body()dto:createMessageDto ){
+            return this.messagesService.sendMessage(req.user.id , dto.matchId , dto.content);
     }
+            
 
 
     @Get(':matchId')
