@@ -32,8 +32,15 @@ export class LikesService {
       where: { id: req.user.id },
     });
 
+    
+
     if (!user1) {
       throw new NotFoundException('Vous ne pouvez pas liker');
+    }
+
+
+    if(user1.id === dto.userId) {
+      throw new BadRequestException('Vous ne pouvez pas vous liker vous meme');
     }
 
     if (!user2) {
@@ -55,7 +62,7 @@ export class LikesService {
       matchDate: new Date(),
       createdAt: new Date(),
       updatedAt: Date(),
-      isMatch: false,
+      isMatch: true,
     });
 
     const hasMatched = user2.receivedLikes.some(

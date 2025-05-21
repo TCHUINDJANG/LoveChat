@@ -12,6 +12,7 @@ import { NotificationModule } from './notifications/notification/notification.mo
 import { LikesModule } from './likes/likes/likes.module';
 import { Media } from './media/entity/media.entity';
 import { MediaModule } from './media/media/media.module';
+import { UploadModule } from './upload/upload/upload.module';
 
 
 @Module({
@@ -34,10 +35,11 @@ import { MediaModule } from './media/media/media.module';
     AuthModule,
     UserModule,
     ChatModule,
-    MatchesModule,
+    MatchesModule,  
     NotificationModule,
     LikesModule,
     MediaModule,
+    UploadModule,
 
   ],
   controllers: [AppController],

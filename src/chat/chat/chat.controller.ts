@@ -27,10 +27,10 @@ export class ChatController {
     //     return this.messagesService.sendMessage(req.user , dto.matchId , dto.content);
     // }
 
-
+     @UseGuards(JwtAuthGuard)
     @Post()
     async sendMessage(@Request() req, @Body()dto:createMessageDto ){
-            return this.messagesService.sendMessage(req.user.id , dto.matchId , dto.content);
+            return this.messagesService.sendMessage(req , dto.matchId , dto.content);
     }
             
 

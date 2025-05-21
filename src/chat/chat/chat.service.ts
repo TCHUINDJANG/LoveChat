@@ -24,6 +24,12 @@ export class ChatService {
 
       const sender = req.user;
 
+      console.log(sender);
+
+      if (!sender || !sender.id) {
+        throw new ForbiddenException('User not authenticated');
+    }
+
         // Vérifier que le match existe et que l'utilisateur fait partie du like
 
         const like = await this.likeRepository.findOne({

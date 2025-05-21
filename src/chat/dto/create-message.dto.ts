@@ -5,7 +5,6 @@ import { IsNotEmpty, IsString, MaxLength , IsUUID } from 'class-validator';
 export class createMessageDto {
 
     @IsNotEmpty()
-    @IsUUID()
     matchId: number;
 
 

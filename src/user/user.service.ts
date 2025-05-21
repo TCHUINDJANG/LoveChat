@@ -11,6 +11,11 @@ import * as geolib from 'geolib'; // Pour calculer les distances
 import { ForgotPasswordDto } from 'src/auth/dto/forgot-password.dto';
 import { ResetPasswordDto } from 'src/auth/dto/ResetPasswordDto.dto';
 import * as bcrypt from 'bcrypt';
+import { Post } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt-auth-guard';
+import { LocalisationUserDto } from './dto/localisation-dto';
+import { Body } from '@nestjs/common';
 
 
 @Injectable()
@@ -160,8 +165,8 @@ export class UserService {
     }
 
 
-
-    async SearchUserDto(searchUserdto: SearchUserDto): Promise<User[]> {
+    
+    async SearchUserDto(@Request() req , searchUserdto: SearchUserDto): Promise<any> {
         const {
             age,
       minAge,
@@ -177,6 +182,21 @@ export class UserService {
         } = searchUserdto
 
 
+    
+
+
+    const sender = req.user;
+    const user = await this.userRepo.findOne({
+        where: {id:sender.id},
+    });
+
+    if(!user) {
+        throw new NotFoundException('Utilisateur not found');
+        }
+    
+    
+
+
         const query = this.userRepo.createQueryBuilder('user')
         .leftJoinAndSelect('user.preference' , 'preference');
 
@@ -184,7 +204,8 @@ export class UserService {
         // Filtre par âge
 
         if(age){
-            query.andWhere('user.age = :age' , {age});
+               query.andWhere('user.age = :age' , {age});
+            
         } else if (minAge || maxAge) {
             query.andWhere('user.age BETWEEN :minAge AND :maxAge', {
                 minAge: minAge || 18,
@@ -248,4 +269,35 @@ export class UserService {
 
     return query.getMany();
     }
+
+
+
+
+    async getLocalisation(
+    @Request() req,
+    @Body() dto: LocalisationUserDto // Ajout du décorateur @Body()
+) {
+    const userId = req.user.id;
+    const user = await this.userRepo.findOne({ where: { id: userId } }); // Correction syntaxique ici
+
+    if (!user) {
+        throw new BadRequestException('Utilisateur non trouvé');
+    }
+
+    user.latitude = dto.latitude;
+    user.longitude = dto.longitude;
+
+    await this.userRepo.save(user);
+
+    return {
+        success: true,
+        message: "Localisation mise à jour",
+        data: {
+            longitude: dto.longitude,
+            latitude: dto.latitude,
+        }
+    };
+
+
+}
 }

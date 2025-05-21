@@ -2,6 +2,8 @@ import { Controller , Post, UploadedFile, UseInterceptors , Get , Param, Delete 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { Response } from 'express';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt-auth-guard';
 
 @Controller('files')
 export class UploadController {
@@ -9,14 +11,16 @@ export class UploadController {
 
 
 
-
+  @UseGuards(JwtAuthGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    if (file.mimetype.startsWith('image/')) {
-      return this.uploadService.processImage(file);
-    }
-    return { filename: file.filename };
+
+    return this.uploadService.processImage(file);
+    // if (file.mimetype.startsWith('image/')) {
+    //   return this.uploadService.processImage(file);
+    // }
+    // return { filename: file.filename };
   }
 
 
