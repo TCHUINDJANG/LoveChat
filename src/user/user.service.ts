@@ -271,7 +271,7 @@ export class UserService {
     }
 
 
-
+// recuper la localisation de l'utilisateur
 
     async getLocalisation(
     @Request() req,
