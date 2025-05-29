@@ -10,6 +10,8 @@ import { ResetPasswordDto } from './dto/ResetPasswordDto.dto';
 import { NotFoundException } from '@nestjs/common';
 import { RegisterAdminDto } from './dto/register.admin.dto';
 import { Role } from 'src/user/entities/user.entity';
+import { InvalidToken } from './entities/invalid-token.entity';
+import { error } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -17,7 +19,9 @@ export class AuthService {
     constructor(
         @InjectRepository(User)
         private readonly userRepo:Repository<User>,
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        @InjectRepository(InvalidToken)
+        private readonly invalidTokenRepo: Repository<InvalidToken>,
     ) {}
 
 
@@ -185,6 +189,61 @@ export class AuthService {
                 user:user
             };
     }
+
+
+
+    
+    async logout(token: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Vérifier si le token est déjà invalidé
+      const existing = await this.invalidTokenRepo.findOne({ where: { token } });
+      if (existing) {
+        return {
+          success: true,
+          message: 'Déconnexion réussie (token déjà invalidé)',
+        };
+      }
+
+      // Décoder le token pour obtenir la date d'expiration
+      const decoded = this.jwtService.decode(token) as { exp: number };
+      if (!decoded || !decoded.exp) {
+        throw new Error('Token invalide');
+      } // Convertir le timestamp UNIX en Date
+      const expiresAt = new Date(decoded.exp * 1000);
+
+      // Stocker le token invalidé
+      await this.invalidTokenRepo.save({
+        token,
+        expiresAt,
+      });
+
+      return {
+        success: true,
+        message: 'Déconnexion réussie',
+      };
+    } catch (error) {
+      throw new BadRequestException('Échec de la déconnexion: ' + error.message);
+    }
+  }
+
+
+  async isTokenInvalid(token: string): Promise<boolean> {
+    const invalidToken = await this.invalidTokenRepo.findOne({ where: { token } });
+    return !!invalidToken;
+  }
+
+  // Méthode pour nettoyer les tokens expirés (peut être appelée périodiquement)
+  async cleanExpiredTokens(): Promise<void> {
+    await this.invalidTokenRepo
+      .createQueryBuilder()
+      .delete()
+      .where('expiresAt < :now', { now: new Date() })
+      .execute();
+  }
+
+
+
+
 
     
 }

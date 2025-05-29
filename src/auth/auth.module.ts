@@ -7,9 +7,10 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
+import { InvalidToken } from './entities/invalid-token.entity';
 
 @Module({
-  imports : [TypeOrmModule.forFeature([User]) , 
+  imports : [TypeOrmModule.forFeature([User , InvalidToken]) , 
   PassportModule.register({ defaultStrategy: 'jwt' }),  
   JwtModule.registerAsync({
     imports: [ConfigModule],
