@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Post , Request } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post , Get ,Query, Request } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -58,6 +58,11 @@ export class AuthController {
         return this.authService.logout(token);
 
     }
+
+    @Get('activate')
+    async activate(@Query('token') token: string) {
+        return this.authService.activateAccount(token);
+}
 
     
 }

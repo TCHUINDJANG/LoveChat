@@ -129,6 +129,13 @@ export class User {
   subscriptions: Subscription[];
 
 
+  @Column({ default: false })
+  isActive: boolean;
+
+  @Column({ nullable: true })
+  activationToken: string | null;
+
+
 
     // @OneToOne(() => Preference, preference => preference.user, { cascade: true })
     // preference: Preference;
