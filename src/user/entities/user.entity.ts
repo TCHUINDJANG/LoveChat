@@ -132,7 +132,7 @@ export class User {
   @Column({ default: false })
   isActive: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   activationToken: string | null;
 
 
