@@ -8,6 +8,8 @@ import { ResetPasswordDto } from 'src/auth/dto/ResetPasswordDto.dto';
 import { UpdateStatutDto } from 'src/auth/dto/update-status-dto';
 import { SearchUserDto } from './dto/search-user.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiQuery, ApiBody, ApiParam } from '@nestjs/swagger';
+import { LocalisationUserDto } from './dto/localisation-dto';
+
 
 // swagger
 // http://localhost:3000/api-docs
@@ -92,13 +94,34 @@ export class UserController {
         required: false
     })
 
+
+
+
+
+   
+     @UseGuards(JwtAuthGuard)
+     @Get('search')
     @ApiResponse({ 
         status: 200, 
         description: 'Liste des utilisateurs correspondant aux critères',
         // type: [UserProfileResponse] 
     })
-    async search(@Query() searchdto:SearchUserDto){
-        return this.userService.SearchUserDto(searchdto)
+    async search(@Request() req , @Query() searchdto:SearchUserDto){
+        return this.userService.SearchUserDto( req ,  searchdto)
+    }
+
+
+
+
+     @UseGuards(JwtAuthGuard)
+     @Post('localisation')
+    @ApiResponse({ 
+        status: 200, 
+        description: 'Localisation des utilisateurs correspondant aux critères',
+        // type: [UserProfileResponse] 
+    })
+    async localisation(@Request() req , @Body() localisationdto:LocalisationUserDto){
+        return this.userService.getLocalisation( req ,  localisationdto)
     }
 
 

@@ -15,4 +15,7 @@ export class MessageDto {
 
   @Expose()
   senderId: number;
+
+  // @Expose()
+  // senderId: number;
 }
