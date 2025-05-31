@@ -57,7 +57,7 @@ jobs:
         path: dist
 
   deploy:
-    name: Deploy
+    name: Deploy to Aws
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -78,5 +78,13 @@ jobs:
     
     # Ici vous ajouteriez vos étapes de déploiement spécifiques
     # Par exemple pour déployer sur Heroku, AWS, etc.
-    - name: Setup deployment
-      run: echo "Configurez vos étapes de déploiement ici"
+    - name: Install Aws CLI
+      run: |
+        curl https://cli-assets.heroku.com/install.sh | sh
+
+    - name: Deploy to Aws
+      run: |
+        heroku login -i
+        git push https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/${{ secrets.HEROKU_APP_NAME }}.git main
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
