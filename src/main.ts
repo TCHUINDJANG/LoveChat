@@ -28,6 +28,11 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    credentials: true
+  });
+
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(process.env.PORT ?? 3000);
 
