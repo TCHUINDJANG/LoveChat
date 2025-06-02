@@ -25,6 +25,10 @@ minAge?: number;
 maxAge?: number;
 
 @IsNotEmpty()
+@IsNumber()
+age?: number;
+
+@IsNotEmpty()
 @IsString()
 location?: string;
 

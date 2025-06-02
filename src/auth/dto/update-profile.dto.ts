@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, IsPhoneNumber, IsEnum, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsOptional, IsString, IsPhoneNumber, IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
 import { Sexe } from 'src/user/entities/user.entity';
 import { Transform } from 'class-transformer';
 
@@ -20,6 +20,10 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   biographie?: string;
+
+  @IsOptional()
+  @IsNumber()
+  age?: number;
 
 
   @IsOptional()

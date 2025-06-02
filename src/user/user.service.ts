@@ -52,6 +52,7 @@ export class UserService {
                 biographie: user.biographie,
                 statut:user.statut,
                 id:user.id,
+                age:user.age,
 
             }
         }
@@ -73,7 +74,8 @@ export class UserService {
         user.email = dto.email ?? user.email;
         user.telephone = dto.telephone ?? user.telephone;
         user.sexe = dto.sexe ?? user.sexe;
-        user.biographie = dto.biographie ?? user.biographie
+        user.biographie = dto.biographie ?? user.biographie,
+        user.age = dto.age ?? user.age,
  
 
         await this.userRepo.save(user)
@@ -89,6 +91,7 @@ export class UserService {
                 email:user.email,
                 telephone:user.telephone,
                 biographie: user.biographie,
+                age:user.age,
             }
         };
 

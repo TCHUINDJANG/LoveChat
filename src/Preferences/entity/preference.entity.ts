@@ -7,7 +7,7 @@ export class Preference {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => User)
+  @OneToOne(() => User, user => user.preference)
   @JoinColumn()
   user: User;
 
