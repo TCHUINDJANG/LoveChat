@@ -13,8 +13,7 @@ import { LikesModule } from './likes/likes/likes.module';
 import { Media } from './media/entity/media.entity';
 import { MediaModule } from './media/media/media.module';
 import { UploadModule } from './upload/upload/upload.module';
-import { SubscriptionsController } from './subscriptions/subscriptions.controller';
-import { SubscriptionsModule } from './subscriptions/subscriptions/subscriptions.module';
+
 
 
 @Module({
@@ -42,10 +41,10 @@ import { SubscriptionsModule } from './subscriptions/subscriptions/subscriptions
     LikesModule,
     MediaModule,
     UploadModule,
-    SubscriptionsModule,
+
 
   ],
-  controllers: [AppController, SubscriptionsController],
+  controllers: [AppController, ],
   providers: [AppService],
 })
 export class AppModule {}

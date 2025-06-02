@@ -5,7 +5,6 @@ import { Preference } from 'src/Preferences/entity/preference.entity';
 import { Photo } from 'src/upload/entity/photo.entity';
 import { Like } from 'src/likes/entities/likes.entity';
 import { Media } from 'src/media/entity/media.entity';
-import { Subscription } from 'src/subscriptions/entities/subscription.entity';
 // import { Preference } from 'src/Preferences/entity/preference.entity';
 
 // id utilisateur 1 :    42e365b0-d577-4422-8f1a-19351ece0eee
@@ -124,9 +123,7 @@ export class User {
   stripeCustomerId: string; // <-- Nouveau champ
 
 
-  // Relation avec les abonnements (optionnel)
-  @OneToMany(() => Subscription, (subscription) => subscription.user)
-  subscriptions: Subscription[];
+
 
 
   @Column({ default: false })

@@ -1,4 +1,9 @@
-import { BadRequestException, Body, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Status, User } from 'src/user/entities/user.entity';
@@ -16,237 +21,210 @@ import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class AuthService {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    private readonly jwtService: JwtService,
+    @InjectRepository(InvalidToken)
+    private readonly invalidTokenRepo: Repository<InvalidToken>,
+    private emailService: EmailService,
+  ) {}
 
-    constructor(
-        @InjectRepository(User)
-        private readonly userRepo:Repository<User>,
-        private readonly jwtService: JwtService,
-        @InjectRepository(InvalidToken)
-        private readonly invalidTokenRepo: Repository<InvalidToken>,
-        private emailService : EmailService,
-    ) {}
+  async register(dto: RegisterDto) {
+    const user = await this.userRepo.findOne({
+      where: [{ email: dto.email }, { telephone: dto.telephone }],
+    });
 
+    if (user) throw new BadRequestException("l'utilisateur exite deja");
 
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+    // 3. Générer un token d'activation (JWT)
+    const activationToken = this.jwtService.sign(
+      { email: dto.email, telephone: dto.telephone },
+      { secret: process.env.JWT_ACTIVATION_SECRET, expiresIn: '24h' },
+    );
 
+    const newUser = this.userRepo.create({
+      nom: dto.nom,
+      prenom: dto.prenon,
+      email: dto.email,
+      telephone: dto.telephone,
+      password: hashedPassword,
+      isActive: false,
+      activationToken,
+    });
 
-    async register(dto: RegisterDto){
+    const saved = await this.userRepo.save(newUser);
 
-            const user = await this.userRepo.findOne({where: [{email:dto.email} , { telephone:dto.telephone}]});
+    const { password, activationToken: _, ...userData } = saved;
 
-            if (user) throw new BadRequestException("l'utilisateur exite deja")
+    return {
+      success: true,
+      message: "Utilisateur cree. Un email d'activation a été envoyé.",
+      data: saved,
+    };
+  }
 
-                const hashedPassword = await bcrypt.hash(dto.password , 10)
+  // Ajoutez cette méthode pour activer le compte
+  async activateAccount(token: string) {
+    try {
+      const payload = this.jwtService.verify(token, {
+        secret: process.env.JWT_ACTIVATION_SECRET,
+      });
 
+      const user = await this.userRepo.findOne({
+        where: [{ email: payload.email }, { telephone: payload.telephone }],
+      });
 
-            // 3. Générer un token d'activation (JWT)
-            const activationToken = this.jwtService.sign(
-                { email: dto.email, telephone: dto.telephone },
-                { secret: process.env.JWT_ACTIVATION_SECRET, expiresIn: '24h' },
-            )
+      if (!user) throw new BadRequestException('Utilisateur non trouvé');
+      if (user.isActive) throw new BadRequestException('Compte déjà activé');
 
-                const newUser = this.userRepo.create({
-                    nom:dto.nom,
-                    prenom:dto.prenon,
-                    email:dto.email,
-                    telephone:dto.telephone,
-                    password:hashedPassword,
-                    isActive: false,
-                    activationToken,
-                });
+      user.isActive = true;
+      user.activationToken = null;
+      await this.userRepo.save(user);
 
-                const saved = await this.userRepo.save(newUser)
+      return {
+        success: true,
+        message: 'Compte active avec success',
+      };
+    } catch (error) {
+      throw new BadRequestException('Token invalide ou expiré');
+    }
+  }
 
-            // 6. Envoyer l'email d'activation (uniquement si email fourni)
-            if(dto.email) {
-                await this.emailService.sendActivationEmail(dto.email , activationToken);
-            }
+  async findByEmailOrPhone(
+    email: string,
+    telephone: string,
+    role: Role,
+  ): Promise<any> {
+    let user;
 
-            const { password, activationToken: _, ...userData } = saved;
-
-                return {
-                    success:true,
-                    message:"Utilisateur cree. Un email d'activation a été envoyé.",
-                    data:saved,
-                }
+    if (email || telephone) {
+      user = await this.userRepo.findOne({
+        where: [
+          ...(email ? [{ email: email, role: role }] : []),
+          ...(telephone ? [{ telephone: telephone, role: role }] : []),
+        ],
+      });
     }
 
+    if (!user) throw new BadRequestException("L'utilisateur n'existe pas");
 
+    if (user.statut === Status.DESACTIVATE)
+      throw new UnauthorizedException('Votre compte a été supprimé');
 
+    if (user.statut === Status.BLOCKED)
+      throw new UnauthorizedException('Votre compte a été bloqué');
 
-    // Ajoutez cette méthode pour activer le compte
-    async activateAccount(token:string) {
-        try {
-            const payload = this.jwtService.verify(token , {
-                secret:process.env.JWT_ACTIVATION_SECRET,
-            });
+    return user;
+  }
 
-            const user = await this.userRepo.findOne({
-                where: [
-                    { email: payload.email },
-                    { telephone: payload.telephone },
-                ],
-            });
+  async login(dto: LoginDto) {
+    const role = Role.USER;
+    const user = await this.findByEmailOrPhone(dto.email, dto.telephone, role);
 
-            if(!user) throw new BadRequestException('Utilisateur non trouvé');
-            if(user.isActive) throw new BadRequestException('Compte déjà activé');
+    const passwordMatch = await bcrypt.compare(dto.password, user.password);
 
-            user.isActive = true;
-            user.activationToken = null;
-            await this.userRepo.save(user);
+    if (!passwordMatch) throw new BadRequestException('Mot de passe incorect');
 
-            return  {
-                success : true,
-                message:'Compte active avec success'
-            }
-        } catch (error) {
-            throw new BadRequestException('Token invalide ou expiré');
-        }
+    const payload = {
+      id: user.id,
+      email: user.email,
+      telephone: user.telephone,
+    };
+
+    const token = this.jwtService.sign(payload);
+
+    return {
+      success: true,
+      message: 'Utilisateur connecte',
+      token: token,
+      user: user,
+    };
+  }
+
+  async resetPassword(id: string, dto: ResetPasswordDto) {
+    const user = await this.userRepo.findOne({ where: { id: id } });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
 
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
 
+    user.password = hashedPassword ?? user.password;
 
-    async findByEmailOrPhone(email , telephone , role):Promise<any> {
+    await this.userRepo.save(user);
 
-        const user =   await this.userRepo.findOne({
-            where: [{ email : email , role:role} , {telephone: telephone , role:role}],
-        });
+    return {
+      success: true,
+      message: 'Mot de passe echange avec success',
+    };
+  }
 
-        if(!user)  throw new BadRequestException("l'utilisateur n'exite pas")
+  async registerAdmin(dto: RegisterAdminDto) {
+    const role = Role.ADMIN;
+    const user = await this.userRepo.findOne({
+      where: { email: dto.email, password: dto.password, role },
+    });
 
-        if(user.statut===Status.DESACTIVATE) 
-            throw new UnauthorizedException('votre compte a ete supprime')
+    if (user) throw new BadRequestException('cet admin  exite deja');
 
-        if(user.statut===Status.BLOCKED) 
-            throw new UnauthorizedException('votre compte a ete bloque')
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+    const newAdmin = this.userRepo.create({
+      email: dto.email,
+      password: hashedPassword,
+      role: Role.ADMIN,
+    });
 
-            return {
-                success: true,
-                message: "Utilisateur trouve",
-                data:user
-            }
+    const saved = await this.userRepo.save(newAdmin);
 
-       
-    }
+    return {
+      success: true,
+      message: 'Administrateur cree avec success',
+      data: {
+        email: saved.email,
+        telephone: saved.telephone,
+      },
+    };
+  }
 
+  async loginAdmin(dto: LoginDto) {
+    const role = Role.ADMIN;
+    const user = await this.findByEmailOrPhone(dto.email, dto.telephone, role);
 
-    async login(dto: LoginDto) {
-        const role = Role.USER
-        const user = await this.findByEmailOrPhone(dto.email , dto.telephone , role)
+    const passwordMatch = await bcrypt.compare(
+      dto.password,
+      (await user).data.password,
+    );
 
-        const passwordMatch = await bcrypt.compare(dto.password , (await user).data.password)
+    if (!passwordMatch) throw new BadRequestException('Mot de passe incorect');
 
-        if(!passwordMatch) throw new BadRequestException("Mot de passe incorect")
+    const payload = {
+      id: user.data.id,
+      email: user.data.email,
+      telephone: user.data.telephone,
+      role: Role.ADMIN,
+    };
 
+    const token = this.jwtService.sign(payload);
 
-        const payload = {
-            id: user.data.id,
-            email:user.data.email,
-            telephone: user.data.telephone
-        };
+    return {
+      success: true,
+      message: 'Utilisateur connecte',
+      token: token,
+      user: user,
+    };
+  }
 
-        const token = this.jwtService.sign(payload)
-
-            return {
-                success : true,
-                message:"Utilisateur connecte",
-                token:token,
-                user:user
-            };
-    }
-
-
-
-    async resetPassword(id: string ,dto:ResetPasswordDto) {
-        const user = await this.userRepo.findOne(({ where: {id: id}}));
-
-        if(!user) {
-                    throw new NotFoundException(`User with ID ${id} not found`);
-                }
-
-
-        const hashedPassword = await bcrypt.hash(dto.newPassword, 10)
-
-        user.password = hashedPassword ?? user.password
-
-
-
-        await this.userRepo.save(user)
-
-        return {
-            success:true,
-            message:'Mot de passe echange avec success',
-        }
-
-        
-    }
-
-
-     async registerAdmin(dto: RegisterAdminDto){
-        
-            const role = Role.ADMIN
-            const user = await this.userRepo.findOne({where: {email:dto.email ,  password:dto.password , role}});
-
-            if (user) throw new BadRequestException("cet admin  exite deja")
-
-                const hashedPassword = await bcrypt.hash(dto.password , 10)
-
-                const newAdmin = this.userRepo.create({
-                    email:dto.email,
-                    password:hashedPassword,
-                    role: Role.ADMIN
-
-                });
-
-                const saved = await this.userRepo.save(newAdmin)
-
-                return {
-                    success:true,
-                    message:"Administrateur cree avec success",
-                    data: {
-                        email:saved.email,
-                        telephone:saved.telephone
-                    },
-                }
-    }
-
-
-
-
-    async loginAdmin(dto: LoginDto) {
-        const role = Role.ADMIN
-        const user = await this.findByEmailOrPhone(dto.email , dto.telephone , role)
-
-        const passwordMatch = await bcrypt.compare(dto.password , (await user).data.password)
-
-        if(!passwordMatch) throw new BadRequestException("Mot de passe incorect")
-
-
-        const payload = {
-            id: user.data.id,
-            email:user.data.email,
-            telephone: user.data.telephone,
-            role: Role.ADMIN,
-        };
-
-        const token = this.jwtService.sign(payload)
-
-            return {
-                success : true,
-                message:"Utilisateur connecte",
-                token:token,
-                user:user
-            };
-    }
-
-
-
-    
-    async logout(token: string): Promise<{ success: boolean; message: string }> {
+  async logout(token: string): Promise<{ success: boolean; message: string }> {
     try {
       // Vérifier si le token est déjà invalidé
-      const existing = await this.invalidTokenRepo.findOne({ where: { token } });
+      const existing = await this.invalidTokenRepo.findOne({
+        where: { token },
+      });
       if (existing) {
         return {
           success: true,
@@ -272,13 +250,16 @@ export class AuthService {
         message: 'Déconnexion réussie',
       };
     } catch (error) {
-      throw new BadRequestException('Échec de la déconnexion: ' + error.message);
+      throw new BadRequestException(
+        'Échec de la déconnexion: ' + error.message,
+      );
     }
   }
 
-
   async isTokenInvalid(token: string): Promise<boolean> {
-    const invalidToken = await this.invalidTokenRepo.findOne({ where: { token } });
+    const invalidToken = await this.invalidTokenRepo.findOne({
+      where: { token },
+    });
     return !!invalidToken;
   }
 
@@ -290,10 +271,4 @@ export class AuthService {
       .where('expiresAt < :now', { now: new Date() })
       .execute();
   }
-
-
-
-
-
-    
 }
