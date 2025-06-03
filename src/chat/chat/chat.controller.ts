@@ -25,8 +25,8 @@ export class ChatController {
     }
             
 
-
-    @Get(':matchId')
+    @UseGuards(JwtAuthGuard)
+    @Get()
     @ApiOperation({ summary: 'Get all messages from a match' })
     @ApiResponse({ status: 200, description: 'Messages retrieved successfully' })
     @ApiResponse({ status: 403, description: 'Forbidden' })

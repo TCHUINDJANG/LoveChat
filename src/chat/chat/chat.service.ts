@@ -6,6 +6,9 @@ import { Match } from 'src/matches/enttity/match.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Request } from '@nestjs/common';
 import { Like } from 'src/likes/entities/likes.entity';
+import { Param , Body } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
+
 
 @Injectable()
 export class ChatService {
@@ -19,46 +22,61 @@ export class ChatService {
 
 
 
-    async sendMessage(@Request() req, matchId:number , content:string) {
+   async sendMessage(@Request() req, @Param('matchId') matchId: number, @Body('content') content: string) {
+    const sender = req.user;
+  
+  if (!sender?.id) {
+    throw new ForbiddenException('Utilisateur non authentifié');
+  }
+
+  // 1. D'abord vérifier que le match existe (sans condition d'utilisateur)
+  const baseMatch = await this.likeRepository.findOne({
+    where: { 
+      id: matchId,
+      isMatch: false,
+    },
+    relations: ['user', 'likedUser'],
+  });
+
+  if (!baseMatch) {
+    throw new NotFoundException('Match non trouvé');
+  }
+
+  // 2. Ensuite vérifier que l'utilisateur fait partie du match
+  if (baseMatch.user.id !== sender.id && baseMatch.likedUser.id !== sender.id) {
+    throw new ForbiddenException('Vous ne faites pas partie de ce match');
+  }
 
 
-      const sender = req.user;
-
-      console.log(sender);
-
-      if (!sender || !sender.id) {
-        throw new ForbiddenException('User not authenticated');
+  // 3. Vérifier que le like inverse existe aussi (double vérification)
+  const reciprocalLike = await this.likeRepository.findOne({
+    where: {
+      user: baseMatch.likedUser,
+      likedUser: baseMatch.user,
+      isMatch: true
     }
+  });
 
-        // Vérifier que le match existe et que l'utilisateur fait partie du like
+  if (!reciprocalLike) {
+    throw new BadRequestException('Le match doit être mutuel pour envoyer des messages');
+  }
 
-        const like = await this.likeRepository.findOne({
-            where: { id:matchId , isMatch:true},
-            relations: ['user', 'likedUser'],
-        });
+  // 3. Création du message
+  const receiverId = baseMatch.user.id === sender.id 
+    ? baseMatch.likedUser.id 
+    : baseMatch.user.id;
 
-        if(!like) {
-            throw new NotFoundException('like not found or not mutual');
-        }
+  const message = this.messageRepository.create({
+    like: { id: matchId },
+    sender: { id: sender.id },
+    receiver: { id: receiverId },
+    content,
+    read: false,
+    createdAt: new Date()
+  });
 
-        // Vérifier que l'utilisateur fait partie du match
-
-        if(like.user.id !== sender.id  &&  like.likedUser.id !== sender.id) {
-            throw new ForbiddenException('Vous ne faites pas partir du match');
-        }
-
-        // Créer et sauvegarder le message
-
-        const message = this.messageRepository.create({
-            like : { id: matchId },
-            sender: { id: sender.id },
-            content,
-            read:false,
-            
-        });
-
-        return this.messageRepository.save(message);
-    }
+  return await this.messageRepository.save(message);
+}
 
 
     async getMessagesForLike(@Request() req,  matchId: number) {

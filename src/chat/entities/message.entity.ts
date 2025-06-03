@@ -19,8 +19,12 @@ export class Message {
   @Column('text')
   content: string;
 
-  @CreateDateColumn()
+  @ManyToOne(() => User)
+  receiver: User;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
+
 
   @Column({ default: false })
   read: boolean;
@@ -28,4 +32,8 @@ export class Message {
 
   @Column({ default: false })
   isMatched: boolean;
+  
+  @ManyToOne(() => Like)
+  match: Like; // Maintenant lié au match plutôt qu'au like
+
 }

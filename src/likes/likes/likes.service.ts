@@ -22,79 +22,87 @@ export class LikesService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  async createLike(@Request() req, @Body() dto: LikeDto) {
-    const user2 = await this.userRepo.findOne({
-      where: { id: dto.userId },
-      relations: ['receivedLikes'], // 👈 assure-toi que cette relation existe dans ton User entity
-    });
+//   async createLike(@Request() req, @Body() dto: LikeDto) {
+//     const user2 = await this.userRepo.findOne({
+//       where: { id: dto.userId },
+//       relations: ['sentLikes'], // 👈 assure-toi que cette relation existe dans ton User entity
+//     });
+// // Charge user1 avec les likes reçus
+//     const user1 = await this.userRepo.findOne({
+//       where: { id: req.user.id },
+//       relations: ['receivedLikes'], // 👈 Ajout de la relation
+//     });
 
-    const user1 = await this.userRepo.findOne({
-      where: { id: req.user.id },
-    });
 
+
+//     if (!user1 || !user2) {
+//     throw new NotFoundException('Utilisateur non trouvé');
+//   }
     
+//     if (!user1) {
+//       throw new NotFoundException('Vous ne pouvez pas liker');
+//     }
 
-    if (!user1) {
-      throw new NotFoundException('Vous ne pouvez pas liker');
-    }
 
+//     if(user1.id === dto.userId) {
+//       throw new BadRequestException('Vous ne pouvez pas vous liker vous meme');
+//     }
 
-    if(user1.id === dto.userId) {
-      throw new BadRequestException('Vous ne pouvez pas vous liker vous meme');
-    }
+//     if (!user2) {
+//       throw new NotFoundException('User not found');
+//     }
 
-    if (!user2) {
-      throw new NotFoundException('User not found');
-    }
+//     const findLike = await this.likeRepositoy.findOne({
+//       where: { user: user1, likedUser: user2 },
+//     });
 
-    const findLike = await this.likeRepositoy.findOne({
-      where: { user: user1, likedUser: user2 },
-    });
+//     if (findLike) {
+//       throw new BadRequestException('Vous likez deja cet utilisateur');
+//     }
 
-    if (findLike) {
-      throw new BadRequestException('Vous likez deja cet utilisateur');
-    }
+//     // Crée le nouveau like
+//     const like = this.likeRepositoy.create({
+//       user: user1,
+//       likedUser: user2,
+//       isLike: true,
+//       matchDate: new Date(),
+//       createdAt: new Date(),
+//       updatedAt: new Date(),
+//       isMatch: true,
+//     });
 
-    const like = this.likeRepositoy.create({
-      user: user1,
-      likedUser: user2,
-      isLike: true,
-      matchDate: new Date(),
-      createdAt: new Date(),
-      updatedAt: Date(),
-      isMatch: true,
-    });
+//     // Vérifie si user2 a déjà liké user1 (pour créer un match)
 
-    const hasMatched = user2.receivedLikes.some(
-      (like) => like.user.id === user2.id,
-    );
+//     const hasMatched = user2.sentLikes?.some(
+//       (like) => like.likedUser.id === user1.id,
+//     ) || false;
 
-    if (hasMatched) {
-      like.isMatch = true;
-    }
+//     if (hasMatched) {
+//       like.isMatch = true;
+//     }
 
-    // Notifier les deux utilisateurs
-    await this.notificationService.createNotification(
-      {
-        recipientId: user1.id,
-        type: 'NEW_MATCH',
-        message: `Vous avez un nouveau match avec ${user2.prenom}!`,
-        metadata: { matchId: like.id },
-      },
-      req.user.id,
-    );
+//     // Notifier les deux utilisateurs
+//     await this.notificationService.createNotification(
+//       {
+//         recipientId: user1.id,
+//         type: 'NEW_MATCH',
+//         message: `Vous avez un nouveau match avec ${user2.prenom}!`,
+//         metadata: { matchId: like.id },
+//       },
+//       req.user.id,
+//     );
 
-    await this.notificationService.createNotification(
-      {
-        recipientId: user2.id,
-        type: 'NEW_MATCH',
-        message: `Vous avez un nouveau match avec ${user1.prenom}!`,
-        metadata: { matchId: like.id },
-      },
-      req.user.id,
-    );
-    return await this.likeRepositoy.save(like);
-  }
+//     await this.notificationService.createNotification(
+//       {
+//         recipientId: user2.id,
+//         type: 'NEW_MATCH',
+//         message: `Vous avez un nouveau match avec ${user1.prenom}!`,
+//         metadata: { matchId: like.id },
+//       },
+//       req.user.id,
+//     );
+//     return await this.likeRepositoy.save(like);
+//   }
 
   // dislike tout passe a false
 
@@ -159,4 +167,67 @@ export class LikesService {
     // 6. Sauvegarder le dislike
     return await this.likeRepositoy.save(dislike);
   }
+
+
+
+
+
+
+  async createLike(@Request() req, @Body() dto: LikeDto) {
+  // 1. Récupération des utilisateurs avec leurs relations
+  const [user1, user2] = await Promise.all([
+    this.userRepo.findOne({ 
+      where: { id: req.user.id },
+      relations: ['sentLikes', 'receivedLikes'] 
+    }),
+    this.userRepo.findOne({ 
+      where: { id: dto.userId },
+      relations: ['sentLikes', 'receivedLikes'] 
+    })
+  ]);
+
+  // 2. Vérifications de base
+  if (!user1 || !user2) {
+    throw new NotFoundException('Utilisateur non trouvé');
+  }
+
+  if (user1.id === user2.id) {
+    throw new BadRequestException('Vous ne pouvez pas vous liker vous-même');
+  }
+
+  // 3. Vérification de like existant
+  const existingLike = await this.likeRepositoy.findOne({
+    where: { user: user1, likedUser: user2 },
+  });
+
+  if (existingLike) {
+    throw new BadRequestException('Vous likez déjà cet utilisateur');
+  }
+
+  // 4. Création du nouveau like
+  const newLike = this.likeRepositoy.create({
+    user: user1,
+    likedUser: user2,
+    isLike: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isMatch: false // Initialisé à false par défaut
+  });
+
+  // 5. Vérification de match (version sécurisée)
+  const hasMatched = user2.sentLikes?.some(like => {
+    return like?.likedUser?.id === user1.id;
+  }) ?? false;
+
+  if (hasMatched) {
+    newLike.isMatch = true;
+    newLike.matchDate = new Date();
+    
+    // Optionnel: Créer une entrée dans une table de matches
+    // await this.matchService.createMatch(user1.id, user2.id);
+  }
+
+  // 6. Sauvegarde et retour
+  return await this.likeRepositoy.save(newLike);
+}
 }

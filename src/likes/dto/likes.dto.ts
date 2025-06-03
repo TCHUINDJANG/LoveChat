@@ -1,10 +1,11 @@
-import { IsOptional,  IsNotEmpty, IsString , IsArray , IsNumber} from 'class-validator';
+import { IsOptional,  IsNotEmpty, IsString , IsArray , IsNumber } from 'class-validator';
+import { PrimaryGeneratedColumn } from 'typeorm';
 
 
 export class LikeDto {
    
     
 @IsNotEmpty()
-@IsString()
+@PrimaryGeneratedColumn('uuid')
 userId: string;
 }

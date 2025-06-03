@@ -10,6 +10,8 @@ import {
   Check,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
+import { OneToMany } from 'typeorm';
+import { Message } from 'src/chat/entities/message.entity';
 
 @Entity()
 @Unique(['user', 'likedUser']) // Empêche les doublons de likes
@@ -42,4 +44,9 @@ export class Like {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+
+  // Relation avec les messages
+  @OneToMany(() => Message, message => message.match)
+  messages: Message[];
 }

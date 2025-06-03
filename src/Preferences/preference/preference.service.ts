@@ -43,7 +43,7 @@ export class PreferenceService {
             minAge:dto.minAge,
             maxAge:dto.maxAge,
             distancePreference:dto.distancePreference,
-            location:dto.location   // 50 km par défaut
+            location:dto.location   
         });
 
         await this.preferenceRepository.save(preference);
