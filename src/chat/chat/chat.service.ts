@@ -8,6 +8,7 @@ import { Request } from '@nestjs/common';
 import { Like } from 'src/likes/entities/likes.entity';
 import { Param , Body } from '@nestjs/common';
 import { BadRequestException } from '@nestjs/common';
+import { match } from 'assert';
 
 
 @Injectable()
@@ -22,7 +23,7 @@ export class ChatService {
 
 
 
-   async sendMessage(@Request() req, @Param('matchId') matchId: number, @Body('content') content: string) {
+  async sendMessage(@Request() req, @Param('matchId') matchId: number, @Body('content') content: string) {
     const sender = req.user;
   
   if (!sender?.id) {
@@ -33,7 +34,7 @@ export class ChatService {
   const baseMatch = await this.likeRepository.findOne({
     where: { 
       id: matchId,
-      isMatch: false,
+      isMatch: true,
     },
     relations: ['user', 'likedUser'],
   });
@@ -53,7 +54,8 @@ export class ChatService {
     where: {
       user: baseMatch.likedUser,
       likedUser: baseMatch.user,
-      isMatch: true
+      isMatch: true,
+
     }
   });
 
@@ -79,9 +81,11 @@ export class ChatService {
 }
 
 
-    async getMessagesForLike(@Request() req,  matchId: number) {
+    async getMessagesForLike(@Request() req,  @Param('matchId') matchId: number) {
 
-      const sender = req.user;
+      // 1. Récupération de l'ID de l'utilisateur connecté
+
+      const sender = req.user.id;
         // Vérifier que le match existe et que l'utilisateur fait partie du match
         const like = await this.likeRepository.findOne({
             where: { id: matchId , isMatch:true},
@@ -90,13 +94,13 @@ export class ChatService {
 
 
         if(!like) {
-            throw new NotFoundException('Match not found or not mutual');
+            throw new NotFoundException('Match non trouvé ou non mutuel');
         }
 
 
         // Vérifier que l'utilisateur fait partie du match
-        if (like.user.id !== sender.id && like.likedUser.id !== sender.id) {
-            throw new ForbiddenException('You are not part of this match');
+        if (like.user.id !== sender && like.likedUser.id !== sender) {
+            throw new ForbiddenException('Vous ne faites pas partie de ce match');
     }
 
         // Récupérer les messages du match
@@ -111,6 +115,7 @@ export class ChatService {
     async markAsRead( @Request() req, messageId:number) {
 
       const sender = req.user;
+      
         const message = await this.messageRepository.findOne({
             where: { id: messageId},
             relations: ['like.user', 'like.likedUser', 'sender'],
@@ -136,9 +141,14 @@ export class ChatService {
     }
 
 
-    async getConversations(user: User) {
+
+
+
+    async getConversations(@Request() req) {
+
+      const user = req.user.id
         // Récupérer tous les matches mutuels avec les derniers messages
-        const like = await this.likeRepository.find({
+        const matches  = await this.likeRepository.find({
             where: [
                 { user: {id:user.id} , isMatch:true},
                 { likedUser: {id: user.id} , isMatch:true},
@@ -147,19 +157,45 @@ export class ChatService {
             relations: ['user', 'likedUser', 'messages'],
         });
 
-        // Pour chaque match, récupérer le dernier message
+        // Pour chaque match, construire l'objet conversation
 
-        const matchesWithLastMessage = await Promise.all(
-      like.map(async (likes) => {
+        const conversations  = await Promise.all(
+      matches.map(async (match) => {
+
+        // Déterminer qui est l'autre utilisateur
+            const otherUser = match.user.id === user.id ? match.likedUser : match.user;
+
+            //recuperer le dernier message
         const lastMessage = await this.messageRepository.findOne({
-          where: { like: { id: likes.id } },
+          where: { like: { id: match.id } },
           order: { createdAt: 'DESC' },
         });
-        return { ...like, lastMessage };
+        // Compter les messages non lus
+
+        const unreadCount = await this.messageRepository.count({
+          where: {
+            like:{id:match.id},
+            receiver: {id:user.id},
+            read: false,
+          },
+        });
+
+        return  {
+          id:match.id,
+          matchId: match.id,
+          matchName: otherUser.prenom,
+          matchPhoto: otherUser.photos, // supposant que l'utilisateur a une photo de profil // ou otherUser.firstName + ' ' + otherUser.lastName
+          lastMessage: lastMessage?.content || '',
+          lastMessageTime: lastMessage?.createdAt || match.updatedAt,
+          unreadCount,
+        };
       }),
     );
 
-    return matchesWithLastMessage;
+    // Trier les conversations par date du dernier message (du plus récent au plus ancien)
+    return conversations.sort((a, b) => 
+        new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+    );
   }
 
 

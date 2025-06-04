@@ -35,7 +35,7 @@ export class ChatController {
         @Req() req: { user: User },
         @Param('matchId') matchId: number,
   ) {
-        return this.messagesService.getMessagesForLike(req.user, matchId);
+        return this.messagesService.getMessagesForLike(req, matchId);
   }
 
 
@@ -61,4 +61,11 @@ export class ChatController {
     async getConversations(@Req() req: { user: User }) {
         return this.messagesService.getConversations(req.user);
   }
+
+
+  @Get('conversations')
+@ApiOperation({ summary: 'Get all conversations formatted for frontend' })
+async getFormattedConversations(@Req() req: { user: User }) {
+    return this.messagesService.getConversations(req.user);
+}
 }

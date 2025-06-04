@@ -25,4 +25,10 @@ export class LikesController {
         async dislikeUser(@Request() req,  @Body() dto:LikeDto) {
             return this.likeService.DisLike(req , dto)
         }
+
+        @UseGuards(JwtAuthGuard)
+        @Get()
+        async getLikes(@Request() req){
+            return this.likeService.getLike(req)
+    }
 }

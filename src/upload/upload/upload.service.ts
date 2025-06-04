@@ -1,72 +1,76 @@
-import { Injectable } from '@nestjs/common';
-import { join } from 'path';
-import * as sharp from 'sharp';
-import { promises as fs } from 'fs';
-import { existsSync, createReadStream } from 'fs';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable , Request } from '@nestjs/common';
+import {  BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Photo } from '../entity/photo.entity';
+import { User } from 'src/user/entities/user.entity';
+import { FileService } from 'src/common/services/file.service';
+import * as path from 'path';
 
 @Injectable()
 export class UploadService {
-    private readonly uploadPath = join(__dirname, '..', '..', 'uploads');
 
-    async processImage(file: Express.Multer.File) {
-        // Validation du fichier
-        if (!file) {
-            throw new BadRequestException('Aucun fichier reçu');
-        }
 
-        // Vérification des propriétés nécessaires
-        if (!file.path || !file.originalname) {
-            throw new BadRequestException('Fichier mal formaté');
-        }
+    constructor(
+            @InjectRepository(Photo)
+            private readonly photoRepository: Repository<Photo>,
 
-        // Création du répertoire uploads s'il n'existe pas
-        if (!existsSync(this.uploadPath)) {
-            await fs.mkdir(this.uploadPath, { recursive: true });
-        }
+            @InjectRepository(User)
+            private readonly userRepository: Repository<User>,
 
-        const thumbnailFilename = `thumb_${file.originalname}`;
-        const thumbnailPath = join(this.uploadPath, thumbnailFilename);
+            private readonly fileService : FileService,
         
-        try {
-            await sharp(file.path)
-                .resize(300, 300)
-                .toFile(thumbnailPath);
-
-            return {
-                original: file.originalname,
-                thumbnail: thumbnailFilename,
-            };
-        } catch (error) {
-            throw new BadRequestException('Erreur lors du traitement de l\'image');
-        }
-    }
-
-    async getFileStream(filename: string) {
-        const filePath = join(this.uploadPath, filename);
-
-        if (!existsSync(filePath)) {
-            throw new NotFoundException('Fichier non trouvé');
-        }
-        return createReadStream(filePath);
-    }
-
-    async deleteFile(filename: string) {
-        const filePath = join(this.uploadPath, filename);
         
-        if (!existsSync(filePath)) {
-            throw new NotFoundException('Fichier non trouvé');
+        ){}
+
+    
+    async processImage(@Request() req , file: Express.Multer.File , profile:boolean) {
+
+
+        const user = await this.userRepository.findOne({where:{ id: req.user.id} , relations:['photos']});
+
+        if(!file) {
+            throw new BadRequestException('Aucun fichier trouvee');
         }
 
-        await fs.unlink(filePath);
-
-        // Supprimer aussi le thumbnail si c'est une image
-        if (filename.startsWith('thumb_')) {
-            const original = filename.replace('thumb_', '');
-            const originalPath = join(this.uploadPath, original);
-            if (existsSync(originalPath)) {
-                await fs.unlink(originalPath);
-            }
+        const validation = this.fileService.validateFile(file);
+        if(! validation.isValid) {
+            throw new BadRequestException(validation.error);
         }
+
+        if(!user) {
+            throw new BadRequestException('Aucun user trouvee');
+        }
+
+        const targetDir = path.join(
+            process.cwd() , 'uploads' , 'identity' , `${req.user.id}`
+        )
+
+        const save = await this.fileService.saveFile(file , targetDir);
+
+        if(!save.success) {
+            throw new BadRequestException(save.error);
+        }
+        
+
+        const photo = await this.photoRepository.create({
+            url: `/uploads/identity/${req.user.id}` + `/${save.filePath}` ,
+            user,
+            isProfile:profile,
+        })
+
+        const saved = await this.photoRepository.save(photo);
+        
+       return {
+        success:true,
+        message:"Photo televersee avec success",
+        url:saved.url,
+       }
+       
     }
+
+    
+
+   
+       
 }

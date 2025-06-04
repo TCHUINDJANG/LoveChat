@@ -175,6 +175,8 @@ export class LikesService {
 
   async createLike(@Request() req, @Body() dto: LikeDto) {
   // 1. Récupération des utilisateurs avec leurs relations
+
+  
   const [user1, user2] = await Promise.all([
     this.userRepo.findOne({ 
       where: { id: req.user.id },
@@ -230,4 +232,32 @@ export class LikesService {
   // 6. Sauvegarde et retour
   return await this.likeRepositoy.save(newLike);
 }
+
+
+
+  async getLike(@Request() req) {
+     console.log('donnnes recues:' , req.user);
+
+
+     const userId = req.user.id;
+
+     const like = await this.likeRepositoy.findOne({
+      where: { user: { id: userId } },
+            relations: ['user'],
+     })
+
+        if(!like){
+            throw new BadRequestException('Like non trouve')
+        }
+
+        return {
+          success : true,
+          message: "Likes récupérés avec succès",
+          data: {
+            isLike: like.isLike,
+            isMatch:like.isMatch,
+            message: like.messages,
+          }
+        }
+  }
 }

@@ -15,7 +15,7 @@ import { ApiResponse } from '@nestjs/swagger';
 export class PreferenceController {
     constructor(private readonly preferencesService: PreferenceService){}
 
-
+    @UseGuards(JwtAuthGuard)
     @Get()
     async getPreferences(@Request() req){
         return this.preferencesService.getUserPreference(req)

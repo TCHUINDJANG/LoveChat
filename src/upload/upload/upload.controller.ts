@@ -4,6 +4,7 @@ import { UploadService } from './upload.service';
 import { Response } from 'express';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth-guard';
+import { Request } from '@nestjs/common';
 
 @Controller('files')
 export class UploadController {
@@ -14,26 +15,28 @@ export class UploadController {
   @UseGuards(JwtAuthGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(@Request() req , @UploadedFile() file: Express.Multer.File) {
 
-    return this.uploadService.processImage(file);
-    // if (file.mimetype.startsWith('image/')) {
-    //   return this.uploadService.processImage(file);
-    // }
-    // return { filename: file.filename };
-  }
-
-
-  @Get(':filename')
-  @Header('Content-Type', '')
-  async getFile(@Param('filename') filename: string, @Res() res: Response) {
+    const profile = false;
+    return this.uploadService.processImage(req , file , profile);
     
-    const file = await this.uploadService.getFileStream(filename);
-
-    res.setHeader('Content-Type', this.getMimeType(filename));
-    file.pipe(res);
   }
 
+
+
+  @UseGuards(JwtAuthGuard)
+  @Post('upload/profile')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadProfileFile(@Request() req , @UploadedFile() file: Express.Multer.File) {
+
+
+    const profile = true;
+    return this.uploadService.processImage(req , file , profile);
+    
+  }
+
+
+ 
 
 
   private getMimeType(filename:string):string {

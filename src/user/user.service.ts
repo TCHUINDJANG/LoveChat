@@ -34,7 +34,10 @@ export class UserService {
 
 
         const userId = req.user.id;
-        const user = await this.userRepo.findOne(({ where: {id: userId}}));
+        const user = await this.userRepo.findOne(({ where: {id: userId} , relations:['photos']}));
+
+        
+
 
         if(!user){
             throw new BadRequestException('Profil non trouve')
@@ -53,6 +56,7 @@ export class UserService {
                 statut:user.statut,
                 id:user.id,
                 age:user.age,
+                profile:user.photos,
 
             }
         }

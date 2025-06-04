@@ -5,31 +5,15 @@ import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Photo } from '../entity/photo.entity';
+import { FileModule } from 'src/common/services/file.module';
+import { User } from 'src/user/entities/user.entity';
 
 @Module({
   imports: [
-    MulterModule.registerAsync({
-      useFactory: () => ({
-        storage: diskStorage({
-          destination: './uploads',
-          filename: (req, file, cb) => {
-            const randomName = uuidv4();
-            return cb(null, `${randomName}${extname(file.originalname)}`);
-          },
-        }),
-        fileFilter: (req, file, cb) => {
-          const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'audio/mpeg'];
-          if (!allowedTypes.includes(file.mimetype)) {
-            return cb(new Error('Type de fichier non autorisé'), false);
-          }
-          cb(null, true);
-        },
-        limits: {
-          fileSize: 50 * 1024 * 1024, // 50MB
-        },
-      }),
-    }),
-  ],
+      TypeOrmModule.forFeature([Photo , User]), FileModule // Ceci fournit le MediaRepository
+    ],
   providers: [UploadService],
   controllers: [UploadController]
 })
