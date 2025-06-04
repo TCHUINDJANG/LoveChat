@@ -3,33 +3,23 @@ import { IsEmail, IsNotEmpty, IsString, Validate, ValidateIf } from 'class-valid
 
 
 export class RegisterDto {
-  
-    
-@IsNotEmpty()
-@IsString()
-nom : string;
+  @IsNotEmpty()
+  @IsString()
+  nom: string;
 
+  @IsNotEmpty()
+  @IsString()
+  prenon: string;
 
+  @IsNotEmpty()
+  @IsString()
+  telephone?: string;
 
-@IsNotEmpty()
-@IsString()
-prenon : string;
+  @IsString()
+  @IsNotEmpty()
+  password: string;
 
-
-@IsNotEmpty()
-@IsString()
-telephone?: string;
-
-
-@IsString()
-@IsNotEmpty()
-password: string;
-
-
-@IsEmail()
-@IsNotEmpty()
-email?:string;
-
-
-    
+  @IsString()
+  @IsNotEmpty()
+  email?: string;
 }

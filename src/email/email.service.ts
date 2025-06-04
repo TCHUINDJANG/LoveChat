@@ -23,4 +23,19 @@ export class EmailService {
             html: `<p>Cliquez <a href="${resetUrl}">ici</a> pour réinitialiser votre mot de passe.</p>`,
         });
     }
+
+
+
+
+    async sendActivationEmail(email: string , token: string):Promise<void> {
+        const activateLink = `${process.env.FRONTEND_URL}/activate?token=${token}`;
+
+        
+        await this.transporter.sendMail({
+            from:process.env.EMAIL_FROM,
+            to: email,
+            subject:'Activez votre compte',
+            html:`<p>Cliquez <a href="${activateLink}">ici</a> pour activer votre compte.</p>`,
+        });
+    }
 }

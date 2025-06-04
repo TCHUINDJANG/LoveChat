@@ -6,8 +6,16 @@ import { JwtService } from '@nestjs/jwt';
 import { UpdateProfileDto } from 'src/auth/dto/update-profile.dto';
 import { EmailService } from 'src/email/email.service';
 import { UpdateStatutDto } from 'src/auth/dto/update-status-dto';
-
-
+import { SearchUserDto } from './dto/search-user.dto';
+import * as geolib from 'geolib'; // Pour calculer les distances
+import { ForgotPasswordDto } from 'src/auth/dto/forgot-password.dto';
+import { ResetPasswordDto } from 'src/auth/dto/ResetPasswordDto.dto';
+import * as bcrypt from 'bcrypt';
+import { Post } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt-auth-guard';
+import { LocalisationUserDto } from './dto/localisation-dto';
+import { Body } from '@nestjs/common';
 
 
 @Injectable()
@@ -26,7 +34,10 @@ export class UserService {
 
 
         const userId = req.user.id;
-        const user = await this.userRepo.findOne(({ where: {id: userId}}));
+        const user = await this.userRepo.findOne(({ where: {id: userId} , relations:['photos']}));
+
+        
+
 
         if(!user){
             throw new BadRequestException('Profil non trouve')
@@ -43,6 +54,9 @@ export class UserService {
                 telephone: user.telephone,
                 biographie: user.biographie,
                 statut:user.statut,
+                id:user.id,
+                age:user.age,
+                profile:user.photos,
 
             }
         }
@@ -64,7 +78,8 @@ export class UserService {
         user.email = dto.email ?? user.email;
         user.telephone = dto.telephone ?? user.telephone;
         user.sexe = dto.sexe ?? user.sexe;
-        user.biographie = dto.biographie ?? user.biographie
+        user.biographie = dto.biographie ?? user.biographie,
+        user.age = dto.age ?? user.age,
  
 
         await this.userRepo.save(user)
@@ -80,18 +95,11 @@ export class UserService {
                 email:user.email,
                 telephone:user.telephone,
                 biographie: user.biographie,
+                age:user.age,
             }
         };
+
     }
-
-
-
-
-
-
-
-
-
 
     async putStatut(id: string , dto:UpdateStatutDto) {
         const user = await this.userRepo.findOne(({ where: {id: id}}));
@@ -119,47 +127,184 @@ export class UserService {
     }
 
 
-    // async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
-    //     const user = await this.userRepo.findOneBy({
-    //         email: forgotPasswordDto.email
-    //     });
+    async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
+        const user = await this.userRepo.findOneBy({
+            email: forgotPasswordDto.email
+        });
 
-    //     if(!user) return ;
-
-
-    //     const token = this.jwtService.sign(
-    //         {userId:user.id},
-    //         { secret: process.env.JWT_SECRET, expiresIn: process.env.JWT_RESET_EXPIRES_IN },
-    //     );
+        if(!user) return ;
 
 
-
-    //     user.resetPasswordToken = token;
-    //     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
-    //     await this.userRepo.save(user)
-
-
-    //     await this.emailService.sendResetPasswordEmail(user.email , token)
-    // }
+        const token = this.jwtService.sign(
+            {userId:user.id},
+            { secret: process.env.JWT_SECRET, expiresIn: process.env.JWT_RESET_EXPIRES_IN },
+        );
 
 
 
-    // async resetPassword(resetPasswordDto: ResetPasswordDto):Promise<void> {
-    //     const payload = this.jwtService.verify(resetPasswordDto.token , {
-    //         secret: process.env.JWT_SECRET,
-    //     });
-
-    //     const user = await this.userRepo.findOneBy({
-    //         resetPasswordToken:resetPasswordDto.token,
-    //         resetPasswordExpires:MoreThan(new Date()),
-    //     })
-
-    //     if(!user) throw new BadRequestException('Token invalide ou expiré');
+        user.resetPasswordToken = token;
+        user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
+        await this.userRepo.save(user)
 
 
-    //     user.password = await bcrypt.hash(resetPasswordDto.newPassword , 10);
-    //     user.resetPasswordToken = null;
-    //     user.resetPasswordExpires = null;
-    //     await this.userRepo.save(user)
-    // }
+        await this.emailService.sendResetPasswordEmail(user.email , token)
+    }
+
+
+
+    async resetPassword(resetPasswordDto: ResetPasswordDto):Promise<void> {
+        const payload = this.jwtService.verify(resetPasswordDto.token , {
+            secret: process.env.JWT_SECRET,
+        });
+
+        const user = await this.userRepo.findOneBy({
+            resetPasswordToken:resetPasswordDto.token,
+            resetPasswordExpires:MoreThan(new Date()),
+        })
+
+        if(!user) throw new BadRequestException('Token invalide ou expiré');
+
+
+        user.password = await bcrypt.hash(resetPasswordDto.newPassword , 10);
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await this.userRepo.save(user)
+    }
+
+
+    
+    async SearchUserDto(@Request() req , searchUserdto: SearchUserDto): Promise<any> {
+        const {
+            age,
+      minAge,
+      maxAge,
+      gender,
+      location,
+      distance,
+      profession,
+      educationLevel,
+      interests,
+      latitude,
+      longitude,
+        } = searchUserdto
+
+
+    
+
+
+    const sender = req.user;
+    const user = await this.userRepo.findOne({
+        where: {id:sender.id},
+    });
+
+    if(!user) {
+        throw new NotFoundException('Utilisateur not found');
+        }
+    
+    
+
+
+        const query = this.userRepo.createQueryBuilder('user')
+        .leftJoinAndSelect('user.preference' , 'preference');
+
+
+        // Filtre par âge
+
+        if(age){
+               query.andWhere('user.age = :age' , {age});
+            
+        } else if (minAge || maxAge) {
+            query.andWhere('user.age BETWEEN :minAge AND :maxAge', {
+                minAge: minAge || 18,
+                maxAge: maxAge || 100,
+            });
+        }
+
+
+        // Filtre par genre
+        if(gender) {
+            query.andWhere('user.gender = :gender', { gender });
+        }
+
+        // Filtre par localisation (texte)
+
+        if(location) {
+            query.andWhere('user.localisation LIKE :localisation' , {
+                location: `%${location}%`,
+            })
+        }
+
+
+        // Filtre par profession
+        if(profession){
+            query.andWhere('preference.profession LIKE :profession' , {
+                profession:`%${profession}%`,
+            });
+        }
+
+
+        // Filtre par niveau d'éducation
+
+        if(educationLevel) {
+            query.andWhere('preference.educationLevel = :educationLevel', {
+        educationLevel,
+      });
+        }
+
+
+
+        // Filtre par centres d'intérêt
+
+        if(interests && interests.length > 0){
+            query.andWhere('preference.interests && ARRAY[:...interests]' , {
+                interests,
+            });
+        }
+
+
+        if (latitude && longitude && distance) {
+      const users = await query.getMany();
+      return users.filter((user) => {
+        if (!user.latitude || !user.longitude) return false;
+        const userDistance = geolib.getDistance(
+          { latitude, longitude },
+          { latitude: user.latitude, longitude: user.longitude },
+        );
+        return userDistance <= distance * 1000; // Conversion en mètres
+      });
+    }
+
+    return query.getMany();
+    }
+
+
+// recuper la localisation de l'utilisateur
+
+    async getLocalisation(
+    @Request() req,
+    @Body() dto: LocalisationUserDto // Ajout du décorateur @Body()
+) {
+    const userId = req.user.id;
+    const user = await this.userRepo.findOne({ where: { id: userId } }); // Correction syntaxique ici
+
+    if (!user) {
+        throw new BadRequestException('Utilisateur non trouvé');
+    }
+
+    user.latitude = dto.latitude;
+    user.longitude = dto.longitude;
+
+    await this.userRepo.save(user);
+
+    return {
+        success: true,
+        message: "Localisation mise à jour",
+        data: {
+            longitude: dto.longitude,
+            latitude: dto.latitude,
+        }
+    };
+
+
+}
 }

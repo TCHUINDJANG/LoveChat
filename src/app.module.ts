@@ -6,6 +6,13 @@ import { UserModule } from './user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { User } from './user/entities/user.entity';
+import { ChatModule } from './chat/chat/chat.module';
+import { MatchesModule } from './matches/matches/matches.module';
+import { NotificationModule } from './notifications/notification/notification.module';
+import { LikesModule } from './likes/likes/likes.module';
+import { UploadModule } from './upload/upload/upload.module';
+
+
 
 @Module({
   imports: [
@@ -26,8 +33,15 @@ import { User } from './user/entities/user.entity';
     TypeOrmModule.forFeature([User]),
     AuthModule,
     UserModule,
+    ChatModule,
+    MatchesModule,  
+    NotificationModule,
+    LikesModule,
+    UploadModule,
+
+
   ],
-  controllers: [AppController],
+  controllers: [AppController, ],
   providers: [AppService],
 })
 export class AppModule {}

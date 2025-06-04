@@ -1,5 +1,17 @@
 
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm'
+import { Column, Entity, PrimaryGeneratedColumn, Unique , JoinColumn, OneToMany} from 'typeorm'
+import { OneToOne } from 'typeorm';
+import { Preference } from 'src/Preferences/entity/preference.entity';
+import { Photo } from 'src/upload/entity/photo.entity';
+import { Like } from 'src/likes/entities/likes.entity';
+
+// import { Preference } from 'src/Preferences/entity/preference.entity';
+
+// id utilisateur 1 :    42e365b0-d577-4422-8f1a-19351ece0eee
+
+// id Utilisateur  2  :     8c975f53-f239-4650-90ab-293383f98615
+
+// id de l'utilisateur 2 :    8c975f53-f239-4650-90ab-293383f98615
 
 
 export enum Sexe  {
@@ -13,6 +25,13 @@ export enum Status  {
     ACTIF='A',
     BLOCKED='B',
     DESACTIVATE= 'D'
+}
+
+
+export enum Role  {
+    USER='User',
+    ADMIN='Admin',
+    SUPERADMIN="SuperAdmin",
 }
 
 
@@ -61,12 +80,60 @@ export class User {
 
 
 
-    @Column({ type: 'json' , nullable: true})
-    preferences?: {
-        ageMin?: number;
-        ageMax?: number;
-        distanceMax?: number;
-    };
+    @Column({
+        type: 'enum',
+        enum:Role,
+        default: Role.USER
+    })
+    role:Role;
+
+
+   @OneToOne(() => Preference, { cascade: true })
+  @JoinColumn()
+  preference: Preference;
+
+  @Column('float', { nullable: true })
+  longitude: number;
+
+  @Column('float', { nullable: true })
+  latitude: number;
+
+
+  
+
+  @OneToMany(() => Photo, photo => photo.user, { cascade: true })
+  @JoinColumn()
+  photos: Photo[];
+
+
+  @OneToMany(() => Like, (like) => like.user , { 
+    cascade: true, // Permet de supprimer les likes si l'user est supprimé
+  })
+  sentLikes: Like[];
+
+  @OneToMany(() => Like, (like) => like.likedUser)
+  receivedLikes: Like[];
+
+
+
+  // Ajoutez ce champ pour stocker l'ID Stripe du client
+  @Column({ nullable: true })
+  stripeCustomerId: string; // <-- Nouveau champ
+
+
+
+
+
+  @Column({ default: false })
+  isActive: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  activationToken: string | null;
+
+
+
+    // @OneToOne(() => Preference, preference => preference.user, { cascade: true })
+    // preference: Preference;
 
 
    @Column({ type: 'varchar', nullable: true })
