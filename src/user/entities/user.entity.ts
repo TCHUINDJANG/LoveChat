@@ -1,5 +1,10 @@
 
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm'
+import { Column, Entity, PrimaryGeneratedColumn, Unique , JoinColumn, OneToMany} from 'typeorm'
+import { OneToOne } from 'typeorm';
+import { Preference } from 'src/Preferences/entity/preference.entity';
+import { Photo } from 'src/upload/entity/photo.entity';
+import { Like } from 'src/likes/entities/likes.entity';
+// import { Preference } from 'src/Preferences/entity/preference.entity';
 
 
 export enum Sexe  {
@@ -13,6 +18,13 @@ export enum Status  {
     ACTIF='A',
     BLOCKED='B',
     DESACTIVATE= 'D'
+}
+
+
+export enum Role  {
+    USER='User',
+    ADMIN='Admin',
+    SUPERADMIN="SuperAdmin",
 }
 
 
@@ -61,12 +73,42 @@ export class User {
 
 
 
-    @Column({ type: 'json' , nullable: true})
-    preferences?: {
-        ageMin?: number;
-        ageMax?: number;
-        distanceMax?: number;
-    };
+    @Column({
+        type: 'enum',
+        enum:Role,
+        default: Role.USER
+    })
+    role:Role;
+
+
+   @OneToOne(() => Preference, { cascade: true })
+  @JoinColumn()
+  preference: Preference;
+
+  @Column('float', { nullable: true })
+  longitude: number;
+
+  @Column('float', { nullable: true })
+  latitude: number;
+
+
+  @OneToMany(() => Photo, photo => photo.user, { cascade: true })
+  @JoinColumn()
+  photos: Photo[];
+
+
+  @OneToMany(() => Like, (like) => like.user , { 
+    cascade: true, // Permet de supprimer les likes si l'user est supprimé
+  })
+  sentLikes: Like[];
+
+  @OneToMany(() => Like, (like) => like.likedUser)
+  receivedLikes: Like[];
+
+
+
+    // @OneToOne(() => Preference, preference => preference.user, { cascade: true })
+    // preference: Preference;
 
 
    @Column({ type: 'varchar', nullable: true })
